@@ -1,0 +1,97 @@
+﻿KOCKOVÍ HRDINOVIA – online bojová hra pre 1 až 4 hráčov
+=========================================================
+
+ČO POTREBUJEŠ
+  • Windows 11 (funguje aj Windows 10, Mac, Linux)
+  • Node.js – zadarmo na https://nodejs.org (stiahni verziu „LTS" a nainštaluj)
+  • Prehliadač Chrome alebo Edge
+
+AKO SPUSTIŤ HRU (jeden počítač je „server")
+  1. Rozbaľ tento ZIP do priečinka (napr. na Plochu).
+  2. Dvakrát klikni na start.bat.
+     – Ak sa Windows opýta na bránu firewall, povoľ „Súkromné siete".
+  3. Otvorí sa prehliadač s hrou. V čiernom okne uvidíš adresu, napr.
+        http://192.168.1.20:3000
+  4. Kamaráti na ROVNAKEJ Wi-Fi/sieti otvoria túto adresu vo svojom prehliadači.
+  5. Každý si vyberie meno a hrdinu a klikne DO BOJA!
+  Čierne okno nezatváraj, kým sa hrá – je to server hry.
+
+HRA CEZ INTERNET (kamaráti sú u seba doma)
+  1. Dvakrát klikni na start-internet.bat.
+     – Prvýkrát nainštaluje bezplatný program cloudflared (cez winget).
+       Potom okno zatvor a spusti start-internet.bat ešte raz.
+  2. V okne sa objaví adresa typu https://nieco-nieco.trycloudflare.com
+  3. Túto adresu pošli kamarátom – otvoria ju v prehliadači a môžu hrať.
+  Adresa sa mení pri každom spustení.
+
+HRA NA MOBILE (Android aj iPhone)
+  Hra beží aj v telefóne – má joystick a dotykové tlačidlá.
+  1. Na počítači spusti start.bat (doma na Wi-Fi) alebo start-internet.bat.
+  2. V telefóne otvor adresu z čierneho okna v prehliadači Chrome/Safari.
+     – doma na Wi-Fi:  http://192.168.x.x:3000
+     – cez internet:   https://nieco-nieco.trycloudflare.com
+  3. Vyber si hrdinu a ťukni DO BOJA! Hrať sa dá na šírku aj na výšku,
+     vždy je vidieť celá aréna (na šírku je väčšia).
+  Ovládanie: vľavo joystick (pohyb), vpravo ÚDER, KOP, SKOK, BLOK (držať), SUPER.
+  Na mobile a na počítači sa dá hrať naraz v tej istej hre.
+
+  AKO SI DAŤ HRU NA PLOCHU AKO APLIKÁCIU
+  (ide to len cez adresu https://… zo start-internet.bat)
+    Android (Chrome): menu ⋮ > „Pridať na plochu" / „Inštalovať aplikáciu".
+    iPhone (Safari):  tlačidlo Zdieľať > „Pridať na plochu".
+  Hra sa potom otvára z ikony na celú obrazovku. Keď server nebeží,
+  dá sa v nej hrať offline proti robotom. Adresa trycloudflare sa pri
+  každom spustení mení – novú zadáš v hre cez „Pripojiť sa na iný server".
+
+HRDINOVIA
+  Kapitán Blesk   – červený hrdina s plášťom a bleskom na hrudi
+  Nočná Sova      – fialový nočný lovec so zlatými očami
+  Kamenný Titan   – kamenný kolos s lávovými puklinami
+  Ľadová Strela   – biely hrdina s ľadovým hľadím
+  Každého hrdinu môže mať naraz iba jeden hráč.
+
+OVLÁDANIE
+  W A S D / šípky ...... pohyb
+  Medzerník ............ skok
+  J .................... úder rukou
+  K .................... kop nohou
+  L (držať) ............ blok (zníži poškodenie o 80 %)
+  P alebo Esc .......... pauza / pokračovať
+  H .................... skryť/zobraziť nápovedu
+
+KOMBÁ (kombinácie kláves)
+  J, J, J .............. trojúder – tretí úder je silný a odhodí súpera
+  J, potom K ........... úder + otočkový kop – silné odhodenie
+  K, K ................. točený kop – zasiahne všetkých okolo teba
+  Medzerník, potom K ... skokový kop – letíš vpred nohami napred
+  J + K naraz .......... SUPER úder – vyhodí súpera do vzduchu (raz za 4 sekundy)
+
+PRAVIDLÁ
+  • Hra má 3 KOLÁ, každé trvá 30 SEKÚND a hrá sa na INEJ MAPE:
+      1. kolo – Kocková aréna  (zelená aréna s vežami)
+      2. kolo – Ľadový ostrov  (ľad sa šmýka – ťažko sa zastavuje!)
+      3. kolo – Lávový hrad    (v strede je lávová diera)
+  • Pred každým kolom je odpočet 3-2-1, po kole krátka tabuľka poradia.
+  • Každý má 100 životov. Keď klesnú na 0, rozpadneš sa na kocky
+    a o 2 sekundy sa vrátiš.
+  • Čím menej máš životov, tým ďalej po údere letíš.
+    Zhoď súpera z arény alebo do lávy – aj to sa počíta ako K.O.!
+  • K.O. sa sčítavajú zo všetkých 3 kôl. Vyhráva ten, kto má na konci
+    najviac K.O. (pri rovnosti rozhoduje menej pádov).
+  • Kto je online: na úvodnej obrazovke vidíš, kto už je pripojený do hry
+    a akú má postavu. Počas hry je hore počet hráčov online (zelená bodka).
+  • Pauza: stlač P alebo Esc (alebo tlačidlo Pauza hore). Hra aj čas sa
+    zastavia všetkým hráčom. Pokračovať môže ktokoľvek – po odpočte 3-2-1.
+  • ČAKÁREŇ: kto sa pripojí prvý, je zakladateľ hry (👑). Hra čaká,
+    kým sa pripojí aspoň 1 ďalší hráč, a spustí ju zakladateľ tlačidlom
+    ▶ SPUSTIŤ HRU. Kým čakáte, môžete sa v aréne rozcvičiť.
+  • Online hrajú len pripojení ľudia, bez robotov. Ak počas hry zostane
+    len jeden hráč, hra sa preruší a vráti sa do čakárne.
+  • Po výsledkoch sa všetci vrátia do čakárne a zakladateľ spustí ďalšiu hru.
+
+RIEŠENIE PROBLÉMOV
+  • „Port 3000 je už obsadený" – hra už beží v inom okne; zatvor ho.
+  • Kamarát sa nevie pripojiť – musí byť na rovnakej Wi-Fi a musíš
+    povoliť Node.js vo firewalle (Nastavenia > Brána firewall systému Windows
+    > Povoliť aplikáciu cez bránu firewall > Node.js > Súkromná sieť).
+  • Iný port: v okne príkazov spusti  set PORT=4000 && node server.js

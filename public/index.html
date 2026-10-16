@@ -1,0 +1,1693 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#C91A09">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kockoví hrdinovia">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Kockoví hrdinovia</title>
+<style>
+  :root {
+    --red: #C91A09; --yellow: #F2CD37; --blue: #0055BF; --green: #237841; --ink: #1b1b1b;
+    --panel: #fffdf5; --muted: #5b5b5b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #7cc4f2; font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif; color: var(--ink); user-select: none; }
+  canvas#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  #labels, #fx { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+  .tag { position: absolute; transform: translate(-50%, -100%); text-align: center; white-space: nowrap; }
+  .tag .nm { font-weight: 800; font-size: 13px; color: #fff; text-shadow: 0 1px 0 #000, 0 0 3px #000; letter-spacing: .3px; }
+  .tag .nm.me::before { content: "▼ "; color: var(--yellow); }
+  .tag .hp { width: 64px; height: 8px; margin: 3px auto 0; background: #0008; border: 2px solid #111; border-radius: 3px; overflow: hidden; }
+  .tag .hp i { display: block; height: 100%; background: #4cd137; transition: width .12s; }
+  .word { position: absolute; transform: translate(-50%, -50%); font-weight: 900; font-size: 30px; letter-spacing: 1px;
+    -webkit-text-stroke: 2px #000; paint-order: stroke fill; text-shadow: 3px 3px 0 #000; animation: pop .7s ease-out forwards; }
+  @keyframes pop { 0% { transform: translate(-50%, -50%) scale(.3) rotate(-10deg); opacity: 1; }
+    25% { transform: translate(-50%, -70%) scale(1.25) rotate(4deg); } 100% { transform: translate(-50%, -140%) scale(1) rotate(0); opacity: 0; } }
+
+  #top { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: var(--yellow); border: 3px solid var(--ink);
+    border-radius: 10px; padding: 5px 14px; font-weight: 800; font-size: 14px; box-shadow: 0 4px 0 var(--ink); display: none; white-space: nowrap; }
+  #top button { font: inherit; font-weight: 800; font-size: 12px; margin-left: 8px; padding: 1px 8px; border: 2px solid var(--ink); border-radius: 6px; background: #fff; cursor: pointer; }
+  #top button:focus-visible, #pause button:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  #pause { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: #0a1a3a88; z-index: 5; }
+  #pause .box { background: var(--panel); border: 4px solid var(--ink); border-radius: 16px; box-shadow: 0 8px 0 var(--ink); padding: 18px 34px 22px; text-align: center; min-width: 300px; }
+  #pause h2 { margin: 0; font-size: 54px; font-weight: 900; color: var(--blue); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 4px 4px 0 var(--yellow); letter-spacing: 2px; }
+  #pause p { margin: 6px 0 14px; font-size: 15px; }
+  #pause button { font: inherit; font-size: 20px; font-weight: 900; padding: 8px 28px; background: #4cd137; color: #fff; border: 4px solid var(--ink); border-radius: 12px; box-shadow: 0 5px 0 var(--ink); cursor: pointer; -webkit-text-stroke: 1px #000; paint-order: stroke fill; }
+  #pause button:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+  #pause .count { font-size: 120px; font-weight: 900; color: var(--yellow); -webkit-text-stroke: 4px #000; paint-order: stroke fill; text-shadow: 6px 6px 0 #000; }
+  #topInfo { font-variant-numeric: tabular-nums; }
+  #topInfo .tm { display: inline-block; min-width: 42px; text-align: center; background: var(--ink); color: #fff; border-radius: 5px; padding: 0 6px; margin-left: 4px; }
+  #topInfo .tm.low { background: var(--red); animation: blink .5s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: .55; } }
+  #phase { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; pointer-events: none; z-index: 4; text-align: center; }
+  #phase .rk { font-size: 30px; font-weight: 900; color: #fff; -webkit-text-stroke: 2px #000; paint-order: stroke fill; text-shadow: 3px 3px 0 #000; letter-spacing: 2px; }
+  #phase .mn { font-size: 52px; font-weight: 900; color: var(--yellow); -webkit-text-stroke: 3px #000; paint-order: stroke fill; text-shadow: 5px 5px 0 #000; }
+  #phase .count { font-size: 120px; line-height: 1.1; font-weight: 900; color: #fff; -webkit-text-stroke: 4px #000; paint-order: stroke fill; text-shadow: 6px 6px 0 #000; }
+  #phase .res { pointer-events: auto; background: var(--panel); border: 4px solid var(--ink); border-radius: 16px; box-shadow: 0 8px 0 var(--ink); padding: 16px 26px 18px; min-width: min(460px, 92vw); }
+  #phase .res h2 { margin: 0 0 2px; font-size: 38px; font-weight: 900; color: var(--red); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 3px 3px 0 var(--yellow); }
+  #phase .res .win { font-size: 17px; font-weight: 800; margin-bottom: 10px; }
+  #phase table { width: 100%; border-collapse: collapse; font-size: 15px; font-variant-numeric: tabular-nums; }
+  #phase th { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); text-align: left; padding: 4px 6px; }
+  #phase td { padding: 6px; border-top: 2px solid #e7e0c6; text-align: left; }
+  #phase td.n, #phase th.n { text-align: center; }
+  #phase tr.first td { background: #fff4c2; font-weight: 800; }
+  #phase .sw { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--ink); border-radius: 3px; vertical-align: -1px; margin-right: 6px; }
+  #phase.top { align-items: center; justify-content: flex-start; padding-top: calc(58px + env(safe-area-inset-top, 0px)); }
+  #phase .lobby { pointer-events: auto; background: #fffdf5f2; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 5px 0 var(--ink); padding: 10px 18px 12px; width: min(380px, 92vw); text-align: center; }
+  #phase .lobby h3 { margin: 0; font-size: 24px; font-weight: 900; letter-spacing: 2px; color: var(--blue); -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; text-shadow: 2px 2px 0 var(--yellow); }
+  #phase .lobby .lc { font-weight: 800; font-size: 13px; color: var(--muted); }
+  #phase .lobby .lp { display: flex; flex-wrap: wrap; gap: 4px 6px; justify-content: center; margin: 8px 0; }
+  #phase .lobby .p { display: inline-flex; align-items: center; gap: 5px; background: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 1px 9px 1px 5px; font-weight: 700; font-size: 13px; }
+  #phase .lobby .p i { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid var(--ink); display: inline-block; }
+  #phase .lobby button { font: inherit; font-size: 19px; font-weight: 900; padding: 7px 26px; background: #4cd137; color: #fff; border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 4px 0 var(--ink); cursor: pointer; -webkit-text-stroke: 1px #000; paint-order: stroke fill; }
+  #phase .lobby button:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+  #phase .lobby button:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  #phase .lobby .lw { font-weight: 800; font-size: 14px; padding: 4px 0; }
+  #phase .lobby .lt { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+  @media (orientation: landscape) { body.touch #phase.top { padding-top: calc(8px + env(safe-area-inset-top, 0px)); } body.touch #phase .lobby { width: min(330px, 46vw); padding: 6px 12px 8px; } body.touch #phase .lobby h3 { font-size: 18px; } }
+  #phase .foot { margin-top: 10px; font-size: 13px; color: var(--muted); }
+  #feed { position: fixed; top: 10px; right: 12px; width: 260px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; pointer-events: none; }
+  #feed div { background: #000b; color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 13px; font-weight: 700; animation: fade 4s forwards; }
+  @keyframes fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+
+  #hud { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); display: flex; gap: 10px; pointer-events: none; }
+  .card { width: 190px; background: var(--panel); border: 3px solid var(--ink); border-radius: 10px; box-shadow: 0 4px 0 var(--ink); overflow: hidden; }
+  .card .hd .hk { display: none; }
+  .card .hd { padding: 4px 8px; color: #fff; font-weight: 800; font-size: 13px; display: flex; justify-content: space-between; text-shadow: 0 1px 0 #0008; }
+  .card .bd { padding: 5px 8px 7px; font-size: 12px; }
+  .card .pn { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card .bar { height: 10px; background: #ddd; border: 2px solid var(--ink); border-radius: 3px; margin: 4px 0; overflow: hidden; }
+  .card .bar i { display: block; height: 100%; background: #4cd137; transition: width .12s; }
+  .card .row { display: flex; justify-content: space-between; align-items: center; }
+  .card .stars { font-size: 12px; font-variant-numeric: tabular-nums; }
+  .card .stars b { font-size: 15px; }
+  .card .sp { font-size: 10px; font-weight: 800; padding: 1px 5px; border-radius: 4px; background: #bbb; color: #fff; }
+  .card .sp.on { background: #e84118; box-shadow: 0 0 8px #ff9f1a; }
+  .card.me { outline: 3px solid var(--yellow); outline-offset: 2px; }
+
+  #help { position: fixed; left: 12px; top: 56px; background: #fffdf5ee; border: 3px solid var(--ink); border-radius: 10px; padding: 8px 12px;
+    font-size: 12.5px; line-height: 1.5; box-shadow: 0 4px 0 var(--ink); max-width: 290px; display: none; }
+  #help h4 { margin: 0 0 4px; font-size: 13px; }
+  #helpX { position: absolute; top: 4px; right: 6px; border: 0; background: none; font: 800 16px/1 system-ui, sans-serif; cursor: pointer; padding: 4px; color: var(--ink); }
+  kbd { display: inline-block; min-width: 20px; text-align: center; padding: 0 5px; border: 2px solid var(--ink); border-bottom-width: 3px; border-radius: 4px; background: #fff; font: 700 11px/16px system-ui, sans-serif; }
+  #help .small { color: var(--muted); font-size: 11px; margin-top: 4px; }
+
+  #banner { position: fixed; top: 38%; left: 50%; transform: translate(-50%, -50%); font-weight: 900; font-size: 64px; color: var(--yellow);
+    -webkit-text-stroke: 3px #000; paint-order: stroke fill; text-shadow: 5px 5px 0 #000; pointer-events: none; text-align: center; display: none; white-space: nowrap; }
+  #banner small { display: block; font-size: 26px; color: #fff; -webkit-text-stroke: 2px #000; }
+
+  #join { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #0006; padding: 16px; overflow: auto; }
+  .panel { background: var(--panel); border: 4px solid var(--ink); border-radius: 16px; box-shadow: 0 8px 0 var(--ink); padding: 20px 24px; width: min(760px, 100%); }
+  .title { font-size: 44px; font-weight: 900; margin: 0; text-align: center; letter-spacing: 1px; color: var(--red); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 4px 4px 0 var(--yellow); }
+  .sub { text-align: center; margin: 4px 0 16px; color: var(--muted); font-size: 14px; }
+  .field { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; }
+  .field label { font-weight: 800; }
+  .field input { flex: 1; font: inherit; font-size: 16px; padding: 8px 10px; border: 3px solid var(--ink); border-radius: 8px; }
+  .heroes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .hero { border: 3px solid var(--ink); border-radius: 12px; padding: 0 0 8px; background: #fff; cursor: pointer; text-align: center; overflow: hidden; transition: transform .1s; font: inherit; }
+  .hero:hover:not([disabled]) { transform: translateY(-3px); }
+  .hero.sel { outline: 4px solid var(--yellow); outline-offset: 2px; transform: translateY(-3px); }
+  .hero[disabled] { opacity: .45; cursor: not-allowed; }
+  .hero canvas { width: 100%; height: auto; display: block; }
+  .hero b { display: block; font-size: 14px; margin-top: 2px; }
+  .hero span { display: block; font-size: 11.5px; color: var(--muted); padding: 2px 6px 0; min-height: 30px; }
+  .hero em { display: block; font-size: 11px; font-style: normal; font-weight: 800; color: var(--red); }
+  .go { display: block; margin: 16px auto 0; font: inherit; font-size: 22px; font-weight: 900; padding: 10px 40px; background: var(--red); color: #fff;
+    border: 4px solid var(--ink); border-radius: 12px; box-shadow: 0 5px 0 var(--ink); cursor: pointer; letter-spacing: 1px; }
+  .go:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+  .go[disabled] { background: #999; cursor: not-allowed; }
+  .status { text-align: center; margin-top: 10px; font-size: 13px; min-height: 18px; font-weight: 700; }
+  .status.err { color: var(--red); }
+  .modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 6px; margin-top: 10px; }
+  .modes .mh { grid-column: 1 / -1; font-weight: 800; font-size: 13px; }
+  .mode { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; border: 2px solid var(--ink); border-radius: 10px; background: #fff; padding: 6px 10px; cursor: pointer; font: inherit; color: var(--ink); }
+  .mode b { font-size: 14px; } .mode span { font-size: 11.5px; color: var(--muted); }
+  .mode.on { background: #fff4c2; outline: 3px solid var(--yellow); outline-offset: 1px; }
+  .mode[disabled] { opacity: .45; cursor: not-allowed; }
+  .mode:focus-visible { outline: 3px solid var(--blue); }
+  .modes .mnote { grid-column: 1 / -1; font-size: 11.5px; color: var(--muted); }
+  .modes .permbtn { font: inherit; font-weight: 800; font-size: 12px; padding: 3px 10px; margin: 2px 0; border: 2px solid var(--ink); border-radius: 8px; background: var(--yellow); color: var(--ink); cursor: pointer; }
+  .modes .diag { opacity: .6; }
+  @media (orientation: landscape) { body.touch .modes { grid-template-columns: repeat(3, 1fr); } body.touch .modes .mh { display: none; } }
+  body.touch .mode { padding: 4px 8px; } body.touch .mode b { font-size: 12.5px; } body.touch .mode span { font-size: 10.5px; }
+  .online { margin: 8px auto 0; max-width: 520px; background: #eef8e8; border: 2px solid #9fd38a; border-radius: 10px; padding: 6px 10px; font-size: 13px; text-align: center; }
+  .online b.h { color: #2e7d1f; }
+  .online .who { display: flex; flex-wrap: wrap; gap: 4px 6px; justify-content: center; margin-top: 4px; }
+  .online .p { display: inline-flex; align-items: center; gap: 5px; background: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 1px 9px 1px 5px; font-weight: 700; font-size: 12px; }
+  .online .p i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--ink); display: inline-block; }
+  .online .p.bot { opacity: .7; font-weight: 600; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #4cd137; box-shadow: 0 0 0 1.5px #1b1b1b; margin-right: 3px; vertical-align: 1px; animation: live 1.6s ease-in-out infinite; }
+  @keyframes live { 50% { opacity: .45; } }
+  #onl { margin-left: 8px; font-size: 12px; font-weight: 800; }
+  .card .hd .pl { display: none; }
+  body:not(.joined) #hud { display: none; }
+  .card .hd { gap: 6px; } .card .hd span:last-child { white-space: nowrap; font-size: 11px; }
+  body.touch.joined .online { display: none; }
+  .keys { margin-top: 14px; font-size: 12.5px; color: var(--ink); background: #f3eed8; border-radius: 10px; padding: 8px 12px; line-height: 1.7; }
+  .alt { display: none; margin: 8px auto 0; font: inherit; font-weight: 800; padding: 6px 16px; border: 3px solid var(--ink); border-radius: 8px; background: var(--yellow); cursor: pointer; }
+  /* ---------- mobil / dotyk ---------- */
+  html, body { -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+  canvas#c, #labels, #fx { touch-action: none; }
+  #join { touch-action: pan-y; align-items: flex-start; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  #join .panel { margin: auto; }
+  .srv { margin-top: 10px; font-size: 13px; }
+  .srv summary { cursor: pointer; font-weight: 700; color: var(--muted); }
+  .srv .field { margin: 8px 0 0; }
+  .srv .field input { font-size: 14px; padding: 6px 8px; min-width: 0; }
+  .srv button { font: inherit; font-weight: 800; padding: 6px 12px; border: 3px solid var(--ink); border-radius: 8px; background: var(--yellow); cursor: pointer; }
+  .keys .t { display: none; }
+  body.touch .keys .k { display: none; }
+  body.touch .keys .t { display: block; }
+  #touch { position: fixed; inset: 0; pointer-events: none; display: none; z-index: 3; }
+  body.touch.joined #touch { display: block; }
+  #stickZone { position: absolute; left: 0; bottom: 0; width: 46%; height: 72%; pointer-events: auto; touch-action: none; }
+  #stick { position: absolute; left: calc(18px + env(safe-area-inset-left, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); width: 108px; height: 108px; border-radius: 50%;
+    background: #ffffff26; border: 2px solid #0006; opacity: .55; transition: opacity .15s; pointer-events: none; }
+  #stick.act { opacity: .9; transition: none; }
+  #knob { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; background: var(--yellow); border: 2px solid var(--ink); box-shadow: 0 2px 0 var(--ink); }
+  #btns { position: absolute; right: calc(10px + env(safe-area-inset-right, 0px)); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); width: 190px; height: 172px; }
+  .tb { position: absolute; pointer-events: auto; touch-action: none; border-radius: 50%; border: 2px solid #000a; box-shadow: 0 3px 0 #000a; color: #fff; font: 900 11px/1 "Trebuchet MS", system-ui, sans-serif;
+    letter-spacing: .3px; -webkit-text-stroke: .8px #000; paint-order: stroke fill; opacity: .5; padding: 0; transition: opacity .2s; }
+  .tb.on { transform: translateY(2px); box-shadow: 0 1px 0 #000a; opacity: .95; transition: none; filter: brightness(1.2); }
+  .tb.pch { right: 0; bottom: 0; width: 72px; height: 72px; background: var(--red); font-size: 13px; }
+  .tb.kck { right: 78px; bottom: 0; width: 62px; height: 62px; background: var(--blue); font-size: 12px; }
+  .tb.jmp { right: 4px; bottom: 80px; width: 56px; height: 56px; background: #2A8A48; }
+  .tb.blk { right: 142px; bottom: 4px; width: 48px; height: 48px; background: #6C6E68; font-size: 10px; }
+  .tb.sup { right: 70px; bottom: 72px; width: 56px; height: 56px; background: #FF7A00; font-size: 10px; }
+  .tb.sup.off { background: #999; opacity: .55; }
+  #rotate { position: fixed; inset: 0; z-index: 9; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 10px; background: #102a55f2; color: #fff; text-align: center; font-weight: 800; font-size: 20px; padding: 24px; }
+  #rotate .ph { width: 70px; height: 120px; border: 5px solid #fff; border-radius: 14px; animation: rot 2s ease-in-out infinite; }
+  @keyframes rot { 0%, 25% { transform: rotate(0); } 60%, 100% { transform: rotate(90deg); } }
+  body.touch #help { display: none !important; }
+  body.touch #hud { bottom: auto; top: calc(46px + env(safe-area-inset-top, 0px)); gap: 5px; }
+  body.touch #hud { opacity: .85; }
+  body.touch .card { width: min(118px, 23vw); border-width: 2px; box-shadow: 0 2px 0 var(--ink); border-radius: 8px; }
+  body.touch .card .hd { font-size: 10px; padding: 2px 6px; }
+  body.touch .card .hd span:last-child { display: none; }
+  body.touch .card .bd { padding: 2px 6px 3px; font-size: 10px; }
+  body.touch .card .bar { height: 7px; margin: 2px 0; border-width: 1.5px; }
+  body.touch .card .stars { font-size: 10px; } body.touch .card .stars b { font-size: 12px; }
+  body.touch .card .sp { display: none; }
+  body.touch .card .hd span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  body.touch .card .stars { white-space: nowrap; }
+  body.touch #top { top: calc(6px + env(safe-area-inset-top, 0px)); font-size: 12px; padding: 3px 10px; border-width: 2px; box-shadow: 0 3px 0 var(--ink); }
+  body.touch #top button { font-size: 12px; padding: 3px 10px; }
+  body.touch #feed { top: auto; bottom: 46%; right: 8px; width: 200px; }
+  body.touch #feed div { font-size: 11px; }
+  body.touch .tag .nm { font-size: 11px; } body.touch .tag .hp { width: 48px; height: 6px; }
+  body.touch #banner { font-size: 40px; } body.touch #banner small { font-size: 16px; }
+  body.touch #phase .mn { font-size: 34px; } body.touch #phase .rk { font-size: 20px; } body.touch #phase .count { font-size: 80px; }
+  body.touch #phase .res { padding: 10px 16px 12px; } body.touch #phase .res h2 { font-size: 24px; }
+  body.touch #phase table { font-size: 13px; } body.touch #phase td { padding: 3px 6px; }
+  /* menu na mobile: zmenšené, aby sa zmestilo na jednu obrazovku */
+  body.touch #join { padding: 8px; }
+  body.touch .panel { padding: 10px 14px 12px; border-width: 3px; border-radius: 12px; box-shadow: 0 5px 0 var(--ink); width: min(620px, 100%); }
+  body.touch .title { font-size: clamp(20px, 6vw, 28px); -webkit-text-stroke: 1.5px var(--ink); text-shadow: 2px 2px 0 var(--yellow); }
+  body.touch .sub { font-size: 11.5px; margin: 2px 0 8px; }
+  body.touch .field { margin-bottom: 8px; gap: 8px; } body.touch .field label { font-size: 13px; }
+  body.touch .field input { font-size: 16px; padding: 5px 8px; border-width: 2px; min-width: 0; }
+  body.touch .heroes { gap: 6px; }
+  body.touch .hero { border-width: 2px; border-radius: 9px; padding-bottom: 4px; }
+  @media (orientation: landscape) {
+    body.touch .heroes { grid-template-columns: repeat(4, 1fr); }
+    body.touch .panel { width: min(540px, 100%); }
+  }
+  @media (orientation: landscape) and (max-height: 400px) {
+    body.touch .panel { width: min(470px, 100%); } body.touch .sub { display: none; } body.touch .field { margin-top: 6px; }
+  }
+  body.touch .hero b { font-size: 11.5px; } body.touch .hero span { display: none; } body.touch .hero em { font-size: 9.5px; }
+  body.touch .go { margin-top: 8px; font-size: 17px; padding: 7px 28px; border-width: 3px; box-shadow: 0 4px 0 var(--ink); }
+  body.touch .status { margin-top: 6px; font-size: 11.5px; min-height: 14px; }
+  body.touch .keys { display: none; }
+  body.touch .srv { margin-top: 4px; font-size: 11.5px; }
+  body.touch #pause .box { padding: 12px 22px 16px; min-width: 240px; } body.touch #pause h2 { font-size: 36px; } body.touch #pause p { font-size: 13px; margin-bottom: 10px; }
+  @media (max-width: 500px) {
+    #topInfo .mapn { display: none; }
+    body.touch .card .hd { font-size: 8.5px; padding: 2px 4px; } body.touch .card .bd { padding: 2px 4px 3px; font-size: 9px; }
+    body.touch #feed { display: none; }
+    body.touch .card .stars { font-size: 8.5px; } body.touch .card .stars b { font-size: 10px; }
+  }
+  /* mobil na šírku: karty hráčov v úzkom stĺpci vľavo, čas a pauza vpravo hore – aréna má celý stred */
+  @media (orientation: landscape) {
+    body.touch #hud { left: calc(6px + env(safe-area-inset-left, 0px)); top: calc(6px + env(safe-area-inset-top, 0px)); transform: none; flex-direction: column; gap: 4px; }
+    body.touch .card { width: 116px; }
+    body.touch .card .bd .pn, body.touch .card .bd .row { display: none; }
+    body.touch .card .bd { padding: 3px 5px 4px; }
+    body.touch .card .bar { margin: 0; }
+    body.touch .card .hd { display: flex; gap: 4px; font-size: 10px; padding: 2px 5px; }
+    body.touch .card .hd .hn { display: none; }
+    body.touch .card .hd .pl { display: block; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    body.touch .card .hd .hk { display: inline; flex: none; }
+    body.touch #top { left: auto; right: calc(6px + env(safe-area-inset-right, 0px)); top: calc(6px + env(safe-area-inset-top, 0px)); transform: none; padding: 3px 6px 3px 10px; }
+    body.touch #topInfo .kolo, body.touch #topInfo .mapn { display: none; }
+    body.touch #top button { margin-left: 6px; padding: 3px 8px; }
+    body.touch #feed { top: calc(48px + env(safe-area-inset-top, 0px)); bottom: auto; right: calc(6px + env(safe-area-inset-right, 0px)); width: 180px; }
+  }
+  @media (max-height: 480px) {
+    .panel { padding: 12px 16px; } .title { font-size: 26px; } .sub { margin: 2px 0 8px; font-size: 12px; }
+    .field { margin-bottom: 8px; } .hero span { display: none; } .go { margin-top: 10px; font-size: 18px; padding: 8px 30px; }
+    .keys { margin-top: 8px; }
+  }
+  @media (max-width: 720px) {
+    .heroes { grid-template-columns: repeat(2, 1fr); }
+    .title { font-size: 32px; }
+    #hud { gap: 4px; } .card { width: 23vw; } .card .hd span:last-child { display: none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="labels"></div>
+<div id="fx"></div>
+<div id="top"><span id="topInfo">Pripravte sa…</span><span id="onl" hidden></span><button id="pauseBtn" type="button">⏸ Pauza (P)</button></div>
+<div id="phase"></div>
+<div id="pause"><div class="box" id="pauseBox"></div></div>
+<div id="feed"></div>
+<div id="hud"></div>
+<div id="help"><button type="button" id="helpX" aria-label="Zavrieť nápovedu">✕</button>
+  <h4>Ovládanie</h4>
+  <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / šípky – pohyb<br>
+  <kbd>Medzerník</kbd> – skok<br>
+  <kbd>J</kbd> – úder rukou &nbsp; <kbd>K</kbd> – kop nohou<br>
+  <kbd>L</kbd> (držať) – blok<br>
+  <kbd>P</kbd> / <kbd>Esc</kbd> – pauza
+  <h4 style="margin-top:6px">Kombá</h4>
+  <kbd>J</kbd><kbd>J</kbd><kbd>J</kbd> – trojúder (posledný je silný)<br>
+  <kbd>J</kbd> → <kbd>K</kbd> – úder + otočkový kop<br>
+  <kbd>K</kbd><kbd>K</kbd> – točený kop (zasiahne všetkých okolo)<br>
+  <kbd>Medzerník</kbd> + <kbd>K</kbd> – skokový kop<br>
+  <kbd>J</kbd>+<kbd>K</kbd> naraz – SUPER úder (raz za 4 s)
+  <div class="small">Hra má 3 kolá po 30 s, každé na inej mape. Vyhráva ten, kto má na konci najviac K.O. Zhoď súpera z arény! <kbd>H</kbd> skryje tento panel.</div>
+</div>
+<div id="banner"></div>
+<div id="touch">
+  <div id="stickZone"></div>
+  <div id="stick"><div id="knob"></div></div>
+  <div id="btns">
+    <button type="button" class="tb sup" data-a="super">SUPER</button>
+    <button type="button" class="tb jmp" data-a="jump">SKOK</button>
+    <button type="button" class="tb blk" data-a="block">BLOK</button>
+    <button type="button" class="tb kck" data-a="kick">KOP</button>
+    <button type="button" class="tb pch" data-a="punch">ÚDER</button>
+  </div>
+</div>
+
+
+<div id="join">
+  <div class="panel">
+    <h1 class="title">KOCKOVÍ HRDINOVIA</h1>
+    <p class="sub" id="sub">Bojová aréna pre 1 – 4 hráčov: 3 kolá po 30 sekúnd, každé na inej mape. Vyber si hrdinu!</p>
+    <div class="field"><label for="name">Tvoje meno:</label><input id="name" maxlength="16" placeholder="napr. Matúš"></div>
+    <div class="heroes" id="heroes"></div>
+    <div id="modes" class="modes" hidden></div>
+    <button class="go" id="go" disabled>DO BOJA!</button>
+    <div class="status" id="status">Pripájam sa na server…</div>
+    <div id="online" class="online" hidden></div>
+    <button class="alt" id="offline">Hrať offline proti robotom</button>
+    <details class="srv" id="srvBox">
+      <summary>Pripojiť sa na iný server</summary>
+      <div class="field"><input id="srv" inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="napr. https://nieco.trycloudflare.com alebo 192.168.1.20:3000"><button type="button" id="srvGo">Pripojiť</button></div>
+    </details>
+    <div class="keys">
+      <div class="k"><b>Ovládanie:</b> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> pohyb · <kbd>Medzerník</kbd> skok · <kbd>J</kbd> úder · <kbd>K</kbd> kop · <kbd>L</kbd> blok · <kbd>P</kbd> pauza<br>
+      <b>Kombá:</b> <kbd>J</kbd><kbd>J</kbd><kbd>J</kbd> trojúder · <kbd>J</kbd>→<kbd>K</kbd> úder+kop · <kbd>K</kbd><kbd>K</kbd> točený kop · skok+<kbd>K</kbd> skokový kop · <kbd>J</kbd>+<kbd>K</kbd> naraz SUPER úder</div>
+      <div class="t"><b>Ovládanie na mobile:</b> vľavo joystick na pohyb, vpravo tlačidlá ÚDER, KOP, SKOK, BLOK (držať) a SUPER.<br>
+      <b>Kombá:</b> ÚDER 3× trojúder · ÚDER→KOP úder+kop · KOP 2× točený kop · SKOK+KOP skokový kop. Hrať sa dá na šírku aj na výšku.</div>
+    </div>
+  </div>
+</div>
+
+<script src="sim.js"></script>
+<script>
+'use strict';
+const OFFLINE_BUILD = !!window.KH_OFFLINE;
+let IS_TOUCH = false;
+function enableTouch() {
+  if (IS_TOUCH) return;
+  IS_TOUCH = true;
+  document.body.classList.add('touch');
+  document.getElementById('pauseBtn').textContent = '⏸ Pauza';
+  document.getElementById('help').style.display = 'none';
+  try { if (gl) resize(); } catch (e) {}   // pri štarte ešte nemusí existovať – resize() sa zavolá neskôr
+}
+if ((window.matchMedia && matchMedia('(pointer: coarse)').matches) || 'ontouchstart' in window || navigator.maxTouchPoints > 0) enableTouch();
+window.addEventListener('touchstart', enableTouch, { capture: true, passive: true });
+window.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') enableTouch(); }, true);
+
+// ================= HRDINOVIA =================
+const SKIN = '#F2CD37';
+const HEROES = [
+  { name: 'Kapitán Blesk', desc: 'Rýchly ako blesk, s červeným plášťom.', col: '#C91A09',
+    torso: '#C91A09', hips: '#F2CD37', legs: '#0055BF', arms: '#C91A09', hands: SKIN, head: SKIN, cape: '#9E1307', debris: ['#C91A09', '#0055BF', '#F2CD37'] },
+  { name: 'Nočná Sova', desc: 'Tichý lovec noci so zlatými očami.', col: '#5B2A86',
+    torso: '#4A2275', hips: '#D4A017', legs: '#222222', arms: '#4A2275', hands: '#222222', head: SKIN, cape: '#2E1450', debris: ['#4A2275', '#222222', '#D4A017'] },
+  { name: 'Kamenný Titan', desc: 'Nezastaviteľný kolos z kameňa a lávy.', col: '#6C6E68',
+    torso: '#6C6E68', hips: '#3A3A3A', legs: '#3A3A3A', arms: '#6C6E68', hands: '#3A3A3A', head: '#A0A5A9', cape: null, scale: 1.08, debris: ['#6C6E68', '#3A3A3A', '#FF7A00'] },
+  { name: 'Ľadová Strela', desc: 'Chladná hlava a ľadovo rýchly kop.', col: '#1E9FB5',
+    torso: '#F4F4F4', hips: '#36AEBF', legs: '#36AEBF', arms: '#9BD3EA', hands: SKIN, head: SKIN, cape: null, debris: ['#F4F4F4', '#36AEBF', '#9BD3EA'] },
+];
+
+// ================= MINI 3D ENGINE (WebGL) =================
+const cv = document.getElementById('c');
+const gl = cv.getContext('webgl', { antialias: true, alpha: false });
+if (!gl) { document.getElementById('status').textContent = 'Tvoj prehliadač nepodporuje WebGL.'; }
+
+const VS = `attribute vec3 aPos; attribute vec3 aNor; attribute vec3 aCol;
+uniform mat4 uVP; uniform mat4 uM;
+varying vec3 vN; varying vec3 vC; varying vec3 vW;
+void main(){ vec4 w = uM*vec4(aPos,1.0); vW = w.xyz; vN = mat3(uM)*aNor; vC = aCol; gl_Position = uVP*w; }`;
+const FS = `precision mediump float;
+varying vec3 vN; varying vec3 vC; varying vec3 vW;
+uniform vec3 uLight; uniform vec3 uEye; uniform vec3 uFog; uniform vec3 uTint; uniform float uFlash; uniform float uAlpha; uniform float uFogD;
+void main(){
+  vec3 n = normalize(vN); vec3 c = vC*uTint;
+  float d = max(dot(n,uLight),0.0);
+  float hemi = 0.5+0.5*n.y;
+  vec3 amb = mix(vec3(0.32,0.30,0.28), vec3(0.55,0.60,0.70), hemi);
+  vec3 v = normalize(uEye-vW); vec3 h = normalize(uLight+v);
+  float s = pow(max(dot(n,h),0.0), 48.0)*0.35;
+  vec3 col = c*(amb + d*vec3(1.0,0.96,0.88)*0.72) + s;
+  col = mix(col, vec3(1.0), uFlash);
+  float f = clamp((length(uEye-vW)-50.0*uFogD)/(80.0*uFogD), 0.0, 0.8);
+  col = mix(col, uFog, f);
+  gl_FragColor = vec4(col, uAlpha);
+}`;
+function sh(type, src) { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s)); return s; }
+const prog = gl.createProgram();
+gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(prog); gl.useProgram(prog);
+const A = { pos: gl.getAttribLocation(prog, 'aPos'), nor: gl.getAttribLocation(prog, 'aNor'), col: gl.getAttribLocation(prog, 'aCol') };
+const U = {}; ['uVP', 'uM', 'uLight', 'uEye', 'uFog', 'uTint', 'uFlash', 'uAlpha', 'uFogD'].forEach(n => U[n] = gl.getUniformLocation(prog, n));
+gl.enableVertexAttribArray(A.pos); gl.enableVertexAttribArray(A.nor); gl.enableVertexAttribArray(A.col);
+gl.enable(gl.DEPTH_TEST);
+let SKY = [0.49, 0.77, 0.95];
+
+function hex(h) { const n = parseInt(h.slice(1), 16); return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; }
+
+const M4 = {
+  id() { const m = new Float32Array(16); m[0] = m[5] = m[10] = m[15] = 1; return m; },
+  mul(a, b) { const o = new Float32Array(16); for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) { let s = 0; for (let k = 0; k < 4; k++) s += a[k * 4 + r] * b[c * 4 + k]; o[c * 4 + r] = s; } return o; },
+  T(x, y, z) { const m = M4.id(); m[12] = x; m[13] = y; m[14] = z; return m; },
+  RX(a) { const m = M4.id(), c = Math.cos(a), s = Math.sin(a); m[5] = c; m[6] = s; m[9] = -s; m[10] = c; return m; },
+  RY(a) { const m = M4.id(), c = Math.cos(a), s = Math.sin(a); m[0] = c; m[2] = -s; m[8] = s; m[10] = c; return m; },
+  RZ(a) { const m = M4.id(), c = Math.cos(a), s = Math.sin(a); m[0] = c; m[1] = s; m[4] = -s; m[5] = c; return m; },
+  S(s) { const m = M4.id(); m[0] = m[5] = m[10] = s; return m; },
+  chain(...ms) { return ms.reduce((a, b) => M4.mul(a, b)); },
+  persp(f, asp, n, fa) { const t = 1 / Math.tan(f / 2), m = new Float32Array(16); m[0] = t / asp; m[5] = t; m[10] = (fa + n) / (n - fa); m[11] = -1; m[14] = 2 * fa * n / (n - fa); return m; },
+  look(e, t, u) {
+    let z = [e[0] - t[0], e[1] - t[1], e[2] - t[2]]; let l = Math.hypot(...z); z = z.map(v => v / l);
+    let x = [u[1] * z[2] - u[2] * z[1], u[2] * z[0] - u[0] * z[2], u[0] * z[1] - u[1] * z[0]]; l = Math.hypot(...x); x = x.map(v => v / l);
+    const y = [z[1] * x[2] - z[2] * x[1], z[2] * x[0] - z[0] * x[2], z[0] * x[1] - z[1] * x[0]];
+    const d = (a) => a[0] * e[0] + a[1] * e[1] + a[2] * e[2];
+    return new Float32Array([x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -d(x), -d(y), -d(z), 1]);
+  },
+};
+
+class Geo {
+  constructor() { this.a = []; }
+  v(p, n, c) { this.a.push(p[0], p[1], p[2], n[0], n[1], n[2], c[0], c[1], c[2]); }
+  tri(p0, p1, p2, c, ctr, ns) {
+    if (!ns) {
+      const ux = p1[0] - p0[0], uy = p1[1] - p0[1], uz = p1[2] - p0[2], vx = p2[0] - p0[0], vy = p2[1] - p0[1], vz = p2[2] - p0[2];
+      let n = [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx]; const l = Math.hypot(...n) || 1; n = n.map(q => q / l);
+      if (ctr) { const fc = [(p0[0] + p1[0] + p2[0]) / 3 - ctr[0], (p0[1] + p1[1] + p2[1]) / 3 - ctr[1], (p0[2] + p1[2] + p2[2]) / 3 - ctr[2]]; if (fc[0] * n[0] + fc[1] * n[1] + fc[2] * n[2] < 0) n = n.map(q => -q); }
+      ns = [n, n, n];
+    }
+    this.v(p0, ns[0], c); this.v(p1, ns[1], c); this.v(p2, ns[2], c);
+  }
+  // box so stredom (cx,cy,cz); o.taper zúži vrch v osi x, o.rz otočí okolo osi z
+  box(cx, cy, cz, w, h, d, col, o = {}) {
+    const c = typeof col === 'string' ? hex(col) : col;
+    const tx = o.taper || 1, tz = o.taperZ || 1, rz = o.rz || 0, cr = Math.cos(rz), sr = Math.sin(rz);
+    const P = [];
+    for (let i = 0; i < 8; i++) {
+      const sx = i & 1 ? 1 : -1, sy = i & 2 ? 1 : -1, sz = i & 4 ? 1 : -1;
+      let x = sx * w / 2 * (sy > 0 ? tx : 1), y = sy * h / 2, z = sz * d / 2 * (sy > 0 ? tz : 1);
+      const x2 = x * cr - y * sr, y2 = x * sr + y * cr;
+      P.push([cx + x2, cy + y2, cz + z]);
+    }
+    const F = [[0, 2, 6, 4], [1, 3, 7, 5], [0, 1, 5, 4], [2, 3, 7, 6], [0, 1, 3, 2], [4, 5, 7, 6]];
+    const ctr = [cx, cy, cz];
+    for (const f of F) { this.tri(P[f[0]], P[f[1]], P[f[2]], c, ctr); this.tri(P[f[0]], P[f[2]], P[f[3]], c, ctr); }
+    return this;
+  }
+  cyl(cx, cy, cz, r, h, seg, col, axis = 'y', rTop = r, caps = 3) {
+    const c = typeof col === 'string' ? hex(col) : col;
+    const map = axis === 'y' ? (x, y, z) => [x, y, z] : axis === 'z' ? (x, y, z) => [x, z, y] : (x, y, z) => [y, x, z];
+    const W = (x, y, z) => { const q = map(x, y, z); return [q[0] + cx, q[1] + cy, q[2] + cz]; };
+    const N = (x, y, z) => map(x, y, z);
+    const h2 = h / 2;
+    for (let i = 0; i < seg; i++) {
+      const a0 = i / seg * Math.PI * 2, a1 = (i + 1) / seg * Math.PI * 2;
+      const s0 = Math.sin(a0), c0 = Math.cos(a0), s1 = Math.sin(a1), c1 = Math.cos(a1);
+      const b0 = W(s0 * r, -h2, c0 * r), b1 = W(s1 * r, -h2, c1 * r), t0 = W(s0 * rTop, h2, c0 * rTop), t1 = W(s1 * rTop, h2, c1 * rTop);
+      const n0 = N(s0, 0, c0), n1 = N(s1, 0, c1);
+      this.tri(b0, b1, t1, c, null, [n0, n1, n1]); this.tri(b0, t1, t0, c, null, [n0, n1, n0]);
+      if (caps & 1) { const nt = N(0, 1, 0); this.tri(W(0, h2, 0), t0, t1, c, null, [nt, nt, nt]); }
+      if (caps & 2) { const nb = N(0, -1, 0); this.tri(W(0, -h2, 0), b1, b0, c, null, [nb, nb, nb]); }
+    }
+    return this;
+  }
+  stud(x, y, z, col, seg = 10) { return this.cyl(x, y + 0.09, z, 0.28, 0.18, seg, col, 'y', 0.28, 1); }
+  mesh() {
+    const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.a), gl.STATIC_DRAW);
+    return { buf, n: this.a.length / 9 };
+  }
+}
+
+const WHITE = [1, 1, 1];
+function draw(mesh, M, tint = WHITE, flash = 0, alpha = 1) {
+  gl.bindBuffer(gl.ARRAY_BUFFER, mesh.buf);
+  gl.vertexAttribPointer(A.pos, 3, gl.FLOAT, false, 36, 0);
+  gl.vertexAttribPointer(A.nor, 3, gl.FLOAT, false, 36, 12);
+  gl.vertexAttribPointer(A.col, 3, gl.FLOAT, false, 36, 24);
+  gl.uniformMatrix4fv(U.uM, false, M);
+  gl.uniform3fv(U.uTint, tint); gl.uniform1f(U.uFlash, flash); gl.uniform1f(U.uAlpha, alpha);
+  gl.drawArrays(gl.TRIANGLES, 0, mesh.n);
+}
+
+// ================= PROSTREDIE (LEGO ARÉNA) =================
+const MAPS = KH.MAPS;
+let mapIdx = 0;
+function gAt(x, z, y) { return KH.groundAt(MAPS[mapIdx], x, z, y); }
+
+// vzhľad jednotlivých máp
+const THEMES = [
+  { plate: '#237841', stud: '#2A8A48', edge: '#F2CD37', stripe: ['#F2CD37', '#1b1b1b'], pal: [['#C91A09', '#F4F4F4'], ['#0055BF', '#F2CD37'], ['#F2CD37', '#0055BF'], ['#F4F4F4', '#C91A09']],
+    column: '#A0A5A9', sea: '#1E5AA8', seaStud: '#2C6FC4', sky: '#7CC4F2', glow: 0 },
+  { plate: '#DDEBF5', stud: '#F4F4F4', edge: '#36AEBF', stripe: ['#36AEBF', '#F4F4F4'], pal: [['#9BD3EA', '#F4F4F4'], ['#F4F4F4', '#9BD3EA']],
+    column: '#9BD3EA', sea: '#0B3D6B', seaStud: '#1B5C8F', sky: '#CFE3F0', glow: 0 },
+  { plate: '#595D60', stud: '#6C6E68', edge: '#FF7A00', stripe: ['#FF7A00', '#1b1b1b'], pal: [['#6C6E68', '#A0A5A9'], ['#A0A5A9', '#6C6E68']],
+    column: '#3A3A3A', sea: '#D83A00', seaStud: '#FF9A00', sky: '#4A2E3A', glow: 0.12 },
+];
+
+function buildWorld(mi) {
+  const M = MAPS[mi], T = THEMES[mi];
+  const g = new Geo();
+  const floorAt = (x, z) => KH.onFloor(M, x, z);
+  // podlaha arény
+  for (const f of M.floor) g.box(f.x, -0.4, f.z, f.w, 0.8, f.d, T.plate);
+  // pruhovaný okraj (aj okolo dier)
+  for (const f of M.floor) {
+    const sides = [];
+    for (let i = 0; i < f.w; i += 2) { const x = f.x - f.w / 2 + i + 1; sides.push([x, f.z - f.d / 2, 2, 0.02, 0, -1], [x, f.z + f.d / 2, 2, 0.02, 0, 1]); }
+    for (let i = 0; i < f.d; i += 2) { const z = f.z - f.d / 2 + i + 1; sides.push([f.x - f.w / 2, z, 0.02, 2, -1, 0], [f.x + f.w / 2, z, 0.02, 2, 1, 0]); }
+    sides.forEach(([x, z, w, d, ox, oz], k) => {
+      if (floorAt(x + ox * 0.3, z + oz * 0.3)) return;
+      g.box(x + ox * 0.01, -0.4, z + oz * 0.01, Math.min(w, f.w), 0.8, Math.min(d, f.d), T.stripe[(k >> 1) & 1]);
+    });
+  }
+  // výstupky (studs)
+  const inObst = (x, z) => M.obst.some(o => Math.abs(x - o.x) < o.w / 2 && Math.abs(z - o.z) < o.d / 2);
+  for (let x = -13.5; x < 14; x++) for (let z = -13.5; z < 14; z++) {
+    if (!floorAt(x, z) || inObst(x, z)) continue;
+    const edge = !floorAt(x + 1, z) || !floorAt(x - 1, z) || !floorAt(x, z + 1) || !floorAt(x, z - 1);
+    let col = T.stud;
+    if (edge) col = T.edge;
+    else if (mi === 0) { const r = Math.hypot(x, z); if (r > 2.4 && r < 3.6) col = '#F4F4F4'; else if (r < 1.2) col = '#C91A09'; }
+    else if (mi === 1 && ((x * 3 + z * 7 + x * z) & 7) < 2) col = '#B4DCEE';
+    else if (mi === 2 && ((x * 5 + z * 3 + x * z) & 7) === 0) col = '#3A3A3A';
+    g.stud(x, 0, z, col);
+  }
+  // prekážky z kociek
+  M.obst.forEach((o, idx) => {
+    const layers = Math.round(o.h / 1.2);
+    const colors = T.pal[o.h >= 3.6 ? 0 : (1 + idx) % T.pal.length];
+    for (let l = 0; l < layers; l++) g.box(o.x, l * 1.2 + 0.6, o.z, o.w - 0.03, 1.18, o.d - 0.03, colors[l % 2]);
+    for (let x = o.x - o.w / 2 + 0.5; x < o.x + o.w / 2; x++) for (let z = o.z - o.d / 2 + 0.5; z < o.z + o.d / 2; z++) g.stud(x, o.h, z, colors[(layers - 1) % 2]);
+    if (mi === 2 && o.h >= 3.6) { // vlajka na hradnej veži
+      g.box(o.x, o.h + 1.3, o.z, 0.12, 2.6, 0.12, '#1b1b1b');
+      g.box(o.x + 0.55 * Math.sign(-o.x), o.h + 2.25, o.z, 1.0, 0.6, 0.04, '#C91A09');
+    }
+  });
+  // podstavec
+  for (const f of M.floor) {
+    g.box(f.x, -4.4, f.z, f.w * 0.5, 7.2, f.d * 0.5, T.column);
+    for (let y = -7.4; y < -1; y += 1.2) g.box(f.x, y, f.z, f.w * 0.5 + 0.06, 0.08, f.d * 0.5 + 0.06, '#1b1b1b');
+  }
+  // dekorácie
+  const island = (x, z, w, d, top = '#4B9F4A', sand = '#E4CD9E') => {
+    g.box(x, -7.6, z, w, 0.8, d, sand);
+    g.box(x, -7.0, z, w - 2, 0.4, d - 2, top);
+    for (let i = x - w / 2 + 1.5; i < x + w / 2 - 1; i += 2) for (let j = z - d / 2 + 1.5; j < z + d / 2 - 1; j += 2) g.stud(i, -6.8, j, top, 8);
+  };
+  const tree = (x, z, s = 1, snow = false) => {
+    g.box(x, -6.8 + 1.2 * s, z, 0.8 * s, 2.4 * s, 0.8 * s, '#6B3F1F');
+    const lay = [[3, 2.9], [2, 4.1], [1, 5.3]];
+    lay.forEach(([w, y], i) => {
+      g.box(x, -6.8 + y * s, z, w * s, 1.2 * s, w * s, ['#237841', '#2A8A48', '#4B9F4A'][i]);
+      if (snow) g.box(x, -6.8 + (y + 0.62) * s, z, w * s * 0.9, 0.12, w * s * 0.9, '#FFFFFF');
+    });
+    g.stud(x, -6.8 + 5.9 * s, z, snow ? '#FFFFFF' : '#4B9F4A');
+  };
+  if (mi === 0) {
+    const house = (x, z) => {
+      g.box(x, -6.8 + 1.8, z, 4, 3.6, 3, '#F4F4F4');
+      g.box(x, -6.8 + 1.2, z + 1.51, 0.9, 2.2, 0.04, '#6B3F1F');
+      g.box(x - 1.2, -6.8 + 2.4, z + 1.51, 0.8, 0.8, 0.04, '#7CC4F2');
+      g.box(x + 1.2, -6.8 + 2.4, z + 1.51, 0.8, 0.8, 0.04, '#7CC4F2');
+      g.box(x, -6.8 + 4.4, z, 4.6, 1.6, 3.6, '#C91A09', { taper: 0.15 });
+    };
+    island(-20, -12, 9, 9); tree(-21, -13, 1.1); tree(-18, -10, 0.8);
+    island(20, -14, 10, 8); house(21, -14); tree(17, -12, 0.7);
+    island(-19, 12, 7, 7); tree(-19, 12, 0.9);
+    island(19, 10, 7, 7); tree(19, 9, 0.8); g.box(20.5, -6.2, 11.5, 1.2, 1.2, 1.2, '#F2CD37');
+    island(0, -24, 12, 6); tree(-3, -24, 1); tree(3, -24, 1.2);
+    const cloud = (x, y, z) => { g.box(x, y, z, 6, 1.2, 3, '#FFFFFF'); g.box(x + 0.5, y + 1.2, z, 3, 1.2, 2, '#FFFFFF'); };
+    cloud(-18, 6, -34); cloud(10, 8, -38); cloud(26, 5, -30);
+  } else if (mi === 1) {
+    island(-20, -12, 9, 9, '#F4F4F4', '#DDEBF5'); tree(-21, -13, 1.1, true); tree(-18, -10, 0.8, true);
+    island(20, -13, 10, 8, '#F4F4F4', '#DDEBF5');
+    // iglu
+    for (let l = 0; l < 4; l++) { const w = 5 - l * 1.1; g.box(20, -6.2 + l * 1.0, -13, w, 1.0, w, l % 2 ? '#F4F4F4' : '#DDEBF5'); }
+    g.box(20, -6.0, -10.3, 1.4, 1.6, 1.2, '#DDEBF5'); g.box(20, -6.2, -9.68, 0.9, 1.1, 0.04, '#0B3D6B');
+    island(-19, 12, 7, 7, '#F4F4F4', '#DDEBF5'); tree(-19, 12, 0.9, true);
+    tree(17, -16, 0.7, true);
+    // ľadové kryhy
+    for (const [x, z, w, d] of [[17, 11, 5, 3], [23, 7, 3, 3], [-26, 2, 4, 5], [6, -22, 6, 3], [-8, -26, 4, 4], [-14, 20, 3, 2]]) {
+      g.box(x, -7.8, z, w, 0.5, d, '#F4F4F4');
+      for (let i = x - w / 2 + 0.5; i < x + w / 2; i += 1) for (let j = z - d / 2 + 0.5; j < z + d / 2; j += 1) if (((i * 3 + j * 5) | 0) % 2 === 0) g.stud(i, -7.55, j, '#DDEBF5', 8);
+    }
+    g.box(0, -5, -30, 10, 7, 6, '#DDEBF5', { taper: 0.4 }); g.box(0, -0.8, -30, 4, 2, 3, '#F4F4F4', { taper: 0.5 });
+  } else {
+    // sopka v pozadí
+    for (let l = 0; l < 7; l++) { const w = 22 - l * 2.8; g.box(0, -7.5 + l * 2, -34, w, 2, w * 0.7, l % 2 ? '#3A3A3A' : '#2B2B2B'); }
+    g.box(0, 6.4, -34, 3, 0.4, 2, '#FF7A00');
+    for (let i = 0; i < 5; i++) g.box(-0.8 + i * 0.4, 5.3 - (i % 2) * 1.5, -30.5 + i * 0.1, 0.4, 2.5, 0.3, '#FF7A00');
+    // skaly v láve
+    for (const [x, z, w] of [[-20, -12, 4], [-17, -15, 2], [21, -12, 5], [19, 11, 3], [-20, 11, 4], [24, 4, 2], [-25, -2, 3], [8, -22, 3]]) {
+      g.box(x, -7.4, z, w, 1.4, w, '#3A3A3A', { taper: 0.6, taperZ: 0.6 });
+      g.box(x, -6.4, z, w * 0.5, 0.7, w * 0.5, '#2B2B2B', { taper: 0.5, taperZ: 0.5 });
+    }
+  }
+  // voda / láva (samostatne, aby láva mohla svietiť)
+  const sea = new Geo();
+  sea.box(0, -8.5, 0, 260, 1, 260, T.sea);
+  for (let x = -30.5; x <= 30.5; x += 1) for (let z = -34.5; z <= 26.5; z += 1) {
+    if (Math.abs(x) < 7 && Math.abs(z) < 7) continue;
+    if (((x * 7 + z * 13) | 0) % 3 !== 0) continue;
+    sea.stud(x, -8, z, T.seaStud, 6);
+  }
+  return { main: g.mesh(), sea: sea.mesh(), glow: T.glow, sky: hex(T.sky) };
+}
+
+// ================= MINIFIGÚRKY =================
+function buildFig(h) {
+  const H = HEROES[h];
+  const P = {};
+  const leg = new Geo().box(0, -0.36, 0, 0.36, 0.72, 0.42, H.legs).box(0, -0.68, 0.07, 0.36, 0.12, 0.56, H.legs);
+  if (h === 0) leg.box(0, -0.6, 0.07, 0.37, 0.28, 0.57, '#F2CD37'); // čižmy
+  P.leg = leg.mesh();
+  const b = new Geo();
+  b.box(0, 0.08, 0, 0.76, 0.16, 0.42, H.hips);
+  b.box(0, 0.55, 0, 0.80, 0.78, 0.40, H.torso, { taper: 0.68 });
+  b.cyl(0, 0.98, 0, 0.12, 0.08, 10, H.head);
+  const E = 0.205;
+  if (h === 0) { // blesk
+    b.cyl(0, 0.6, E - 0.01, 0.2, 0.02, 16, '#F2CD37', 'z');
+    b.box(0.03, 0.68, E + 0.01, 0.07, 0.2, 0.02, '#C91A09', { rz: -0.5 });
+    b.box(-0.03, 0.52, E + 0.01, 0.07, 0.2, 0.02, '#C91A09', { rz: -0.5 });
+    b.box(0, 0.6, E + 0.01, 0.14, 0.05, 0.02, '#C91A09');
+  } else if (h === 1) { // sova
+    for (const s of [-1, 1]) { b.cyl(s * 0.1, 0.64, E, 0.085, 0.02, 14, '#D4A017', 'z'); b.cyl(s * 0.1, 0.64, E + 0.012, 0.04, 0.02, 10, '#111111', 'z'); }
+    b.box(0, 0.5, E, 0.07, 0.07, 0.02, '#D4A017', { rz: 0.785 });
+    b.box(0, 0.36, E, 0.5, 0.03, 0.02, '#D4A017');
+  } else if (h === 2) { // titan – lávové praskliny
+    b.box(-0.1, 0.62, E, 0.03, 0.34, 0.02, '#FF7A00', { rz: 0.4 });
+    b.box(0.1, 0.52, E, 0.03, 0.3, 0.02, '#FF7A00', { rz: -0.5 });
+    b.box(0.02, 0.36, E, 0.03, 0.2, 0.02, '#FFB000', { rz: 0.9 });
+    b.box(0, 0.72, E, 0.18, 0.03, 0.02, '#FF7A00');
+  } else { // ľad – snehová vločka
+    for (const a of [0, 1.047, 2.094]) b.box(0, 0.58, E, 0.045, 0.36, 0.02, '#36AEBF', { rz: a });
+    b.cyl(0, 0.58, E + 0.005, 0.05, 0.02, 10, '#F4F4F4', 'z');
+  }
+  P.body = b.mesh();
+  const arm = new Geo().box(0, -0.2, 0, 0.2, 0.46, 0.24, H.arms).cyl(0, -0.48, 0.04, 0.1, 0.14, 10, H.hands);
+  if (h === 2) arm.box(0, 0.03, 0, 0.36, 0.14, 0.36, '#595D60');
+  P.arm = arm.mesh();
+  const hd = new Geo();
+  hd.cyl(0, 0.21, 0, 0.28, 0.42, 18, H.head);
+  hd.cyl(0, 0.47, 0, 0.16, 0.1, 12, H.head);
+  const face = (eyeCol) => {
+    for (const s of [-1, 1]) hd.box(s * 0.09, 0.26, 0.27, 0.05, 0.09, 0.04, eyeCol);
+    hd.box(0, 0.115, 0.27, 0.14, 0.035, 0.04, '#111111');
+    for (const s of [-1, 1]) hd.box(s * 0.085, 0.14, 0.265, 0.035, 0.05, 0.04, '#111111');
+  };
+  if (h === 0) {
+    face('#FFFFFF');
+    hd.cyl(0, 0.26, 0, 0.292, 0.13, 18, '#C91A09');
+    for (const s of [-1, 1]) hd.box(s * 0.09, 0.265, 0.285, 0.08, 0.05, 0.03, '#FFFFFF');
+    hd.cyl(0, 0.42, 0, 0.3, 0.14, 18, '#582A12');
+    hd.box(0.05, 0.4, 0.23, 0.44, 0.1, 0.14, '#582A12', { rz: -0.15 });
+  } else if (h === 1) {
+    face('#111111');
+    hd.cyl(0, 0.37, 0, 0.305, 0.32, 18, '#4A2275');
+    hd.cyl(0, 0.54, 0, 0.18, 0.04, 12, '#4A2275');
+    for (const s of [-1, 1]) {
+      hd.box(s * 0.09, 0.27, 0.29, 0.1, 0.06, 0.03, '#FFD84A');
+      hd.box(s * 0.2, 0.6, 0, 0.14, 0.18, 0.14, '#4A2275', { taper: 0.2, rz: -s * 0.6 });
+      hd.box(s * 0.2, 0.6, 0.075, 0.06, 0.1, 0.02, '#D4A017', { rz: -s * 0.6 });
+    }
+  } else if (h === 2) {
+    face('#111111');
+    hd.cyl(0, 0.36, 0, 0.31, 0.34, 8, '#595D60');
+    hd.box(0, 0.27, 0.29, 0.38, 0.06, 0.04, '#FF7A00');
+    hd.box(0, 0.56, 0, 0.12, 0.08, 0.5, '#595D60');
+  } else {
+    face('#111111');
+    hd.cyl(0, 0.34, 0, 0.305, 0.36, 18, '#F4F4F4');
+    hd.box(0, 0.26, 0.26, 0.46, 0.13, 0.1, '#3DE0F5');
+    hd.box(0, 0.58, -0.02, 0.06, 0.16, 0.44, '#36AEBF');
+  }
+  P.head = hd.mesh();
+  if (H.cape) P.cape = new Geo().box(0, -0.46, -0.02, 0.62, 0.92, 0.04, H.cape, { taper: 0.75 }).mesh();
+  P.scale = H.scale || 1;
+  return P;
+}
+
+function strike(t, h, d) { if (t < h) return t / h; if (t < h + 0.08) return 1; return Math.max(0, 1 - (t - h - 0.08) / Math.max(0.05, d - h - 0.08)); }
+
+function poseFor(ds, now) {
+  const q = { legL: 0, legR: 0, legRz: 0, armL: 0, armR: 0, armLz: 0, armRz: 0, twist: 0, lean: 0, spin: 0, lift: 0, cape: 0.12 };
+  const sp = Math.min(1, ds.speed / 6);
+  const sw = Math.sin(ds.phase) * sp * 0.75;
+  q.legL = sw; q.legR = -sw; q.armL = -sw * 0.8; q.armR = sw * 0.8;
+  q.armL += Math.sin(now * 2) * 0.04; q.armR -= Math.sin(now * 2) * 0.04;
+  q.cape = 0.12 + ds.speed * 0.09;
+  const air = ds.y - ds.ground > 0.08;
+  if (air && !ds.action) { q.legL = -0.5; q.legR = 0.25; q.armL = -0.9; q.armR = -0.3; q.cape = 0.8; }
+  const t = now - ds.actStart, a = ds.action;
+  if (a === 'punch1') { const k = strike(t, .09, .28); q.armR = -1.55 * k; q.twist = 0.35 * k; }
+  else if (a === 'punch2') { const k = strike(t, .09, .28); q.armL = -1.55 * k; q.twist = -0.35 * k; }
+  else if (a === 'punch3') { const k = strike(t, .17, .45); q.armR = -1.65 * k; q.armL = 0.4 * k; q.twist = 0.55 * k; q.lean = 0.2 * k; }
+  else if (a === 'kick') { const k = strike(t, .17, .42); q.legR = -1.5 * k; q.lean = -0.2 * k; q.armL = -0.5 * k; q.armR = 0.3 * k; }
+  else if (a === 'combokick') { const k = strike(t, .2, .5); q.legL = -1.6 * k; q.lean = -0.25 * k; q.spin = -0.6 * k; q.armR = -0.6 * k; }
+  else if (a === 'spin') { q.spin = Math.PI * 2 * Math.min(1, t / 0.5); const k = t < 0.45 ? 1 : 0; q.legR = -1.4 * k; q.legRz = 0.3 * k; q.lean = -0.15; q.armL = -1.2; q.armR = -1.2; q.armLz = -0.8; q.armRz = 0.8; }
+  else if (a === 'airkick') { q.legR = -1.5; q.legL = -0.6; q.lean = -0.35; q.armL = -0.7; q.armR = -0.7; q.cape = 1.1; }
+  else if (a === 'super') {
+    if (t < 0.28) { const k = t / 0.28; q.armR = 0.7 * k; q.lift = -0.18 * k; q.lean = 0.2 * k; q.legL = -0.3 * k; q.legR = 0.2 * k; }
+    else { const k = strike(t, .28, .7); q.armR = -3.0 * Math.max(k, 0.3); q.armL = 0.3; q.lean = -0.1 * k; q.cape = 0.9; }
+  }
+  if (ds.blocking) { q.armL = -1.4; q.armR = -1.4; q.armLz = 0.55; q.armRz = -0.55; q.legL = 0.1; q.legR = -0.1; }
+  if (ds.stun) { q.lean = -0.35; q.armL = -0.7; q.armR = -0.7; q.armLz = -0.5; q.armRz = 0.5; }
+  return q;
+}
+
+function drawFig(F, ds, q, flash, tint) {
+  const root = M4.chain(M4.T(ds.x, ds.y + q.lift, ds.z), M4.RY(ds.f + q.spin), M4.S(F.scale));
+  draw(F.leg, M4.chain(root, M4.T(-0.19, 0.74, 0), M4.RX(q.legR), M4.RZ(-q.legRz)), tint, flash);
+  draw(F.leg, M4.chain(root, M4.T(0.19, 0.74, 0), M4.RX(q.legL)), tint, flash);
+  const B = M4.chain(root, M4.T(0, 0.74, 0), M4.RY(q.twist), M4.RX(q.lean));
+  draw(F.body, B, tint, flash);
+  draw(F.arm, M4.chain(B, M4.T(-0.34, 0.86, 0), M4.RZ(-0.12), M4.RX(q.armR), M4.RZ(q.armRz)), tint, flash);
+  draw(F.arm, M4.chain(B, M4.T(0.34, 0.86, 0), M4.RZ(0.12), M4.RX(q.armL), M4.RZ(q.armLz)), tint, flash);
+  draw(F.head, M4.chain(B, M4.T(0, 1.02, 0)), tint, flash);
+  if (F.cape) draw(F.cape, M4.chain(B, M4.T(0, 0.92, -0.22), M4.RX(Math.min(1.3, q.cape))), tint, flash);
+}
+
+let WORLDS, FIGS, SHADOW, SPARK = {}, DEBRIS = {};
+function initGfx() {
+  WORLDS = MAPS.map((_, i) => buildWorld(i));
+  FIGS = HEROES.map((_, i) => buildFig(i));
+  SHADOW = new Geo().cyl(0, 0, 0, 0.6, 0.02, 16, '#000000').mesh();
+  for (const c of ['#FFF4B0', '#FFB000', '#FFFFFF', '#7FDBFF']) SPARK[c] = new Geo().box(0, 0, 0, 0.14, 0.14, 0.14, c).mesh();
+}
+function debrisMesh(c) {
+  if (!DEBRIS[c]) {
+    const g = new Geo().box(0, 0, 0, 0.5, 0.3, 0.25, c);
+    g.cyl(-0.125, 0.19, 0, 0.09, 0.08, 8, c); g.cyl(0.125, 0.19, 0, 0.09, 0.08, 8, c);
+    DEBRIS[c] = g.mesh();
+  }
+  return DEBRIS[c];
+}
+
+// ================= ZVUKY =================
+let AC = null, NOISE = null;
+function initAudio() {
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  try {
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    NOISE = AC.createBuffer(1, AC.sampleRate * 0.4, AC.sampleRate);
+    const d = NOISE.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  } catch (e) { AC = null; }
+}
+function tone(type, f0, f1, dur, vol, delay = 0) {
+  const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(AC.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+function noise(freq, dur, vol, type = 'lowpass') {
+  const t = AC.currentTime, s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+  s.buffer = NOISE; f.type = type; f.frequency.value = freq;
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  s.connect(f).connect(g).connect(AC.destination); s.start(t); s.stop(t + dur + 0.02);
+}
+function sfx(k) {
+  if (!AC) return;
+  try {
+    if (k === 'hit') { noise(1400, 0.12, 0.5); tone('sine', 160, 60, 0.12, 0.4); }
+    else if (k === 'heavy') { noise(900, 0.25, 0.7); tone('sine', 110, 35, 0.25, 0.6); }
+    else if (k === 'block') { tone('square', 700, 420, 0.07, 0.12); noise(3000, 0.05, 0.2, 'highpass'); }
+    else if (k === 'sw') noise(2200, 0.08, 0.1, 'bandpass');
+    else if (k === 'jump') tone('sine', 300, 620, 0.12, 0.08);
+    else if (k === 'ko') { tone('triangle', 520, 70, 0.55, 0.3); noise(600, 0.35, 0.4); }
+    else if (k === 'win') [523, 659, 784, 1047].forEach((f, i) => tone('square', f, f, 0.18, 0.1, i * 0.13));
+  } catch (e) {}
+}
+
+// ================= SIEŤ =================
+let joinedAt = 0;
+let net = null, myId = 0, joined = false, selHero = -1, lastState = null, roster = [];
+const status = document.getElementById('status');
+function setStatus(t, err) { status.textContent = t; status.className = 'status' + (err ? ' err' : ''); }
+
+let curWs = null, localTimer = null;
+// adresa servera: prázdna = server, z ktorého je stránka; inak to, čo zadal hráč
+function wsUrlFor(addr) {
+  addr = (addr || '').trim();
+  if (!addr) return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host;
+  const m = addr.match(/^(https?|wss?):\/\/(.+)$/i);
+  let host = (m ? m[2] : addr).replace(/\/.*$/, '');
+  let secure = m ? /^(https|wss)$/i.test(m[1]) : !/^(\d+\.){3}\d+(:\d+)?$|^localhost(:\d+)?$/i.test(host);
+  if (!m && !secure && !/:\d+$/.test(host)) host += ':3000';
+  return (secure ? 'wss://' : 'ws://') + host;
+}
+function connectServer(addr) {
+  if (curWs) { try { curWs.onclose = null; curWs.close(); } catch (e) {} curWs = null; }
+  if (localTimer) { clearInterval(localTimer); localTimer = null; }
+  for (const ds of disp.values()) ds.tag.remove();
+  disp.clear(); roster = []; lastState = null; net = null; updateGo();
+  const url = wsUrlFor(addr);
+  if (location.protocol === 'https:' && url.startsWith('ws://')) {
+    setStatus('Z tejto stránky sa dá pripojiť len na adresu https://… (napr. z start-internet.bat).', true); return;
+  }
+  setStatus('Pripájam sa na server…');
+  let ws;
+  try { ws = new WebSocket(url); } catch (e) { onNetFail(); return; }
+  curWs = ws;
+  let opened = false;
+  const to = setTimeout(() => { if (!opened) { try { ws.close(); } catch (e) {} onNetFail(); } }, 5000);
+  ws.onopen = () => {
+    opened = true; clearTimeout(to); setStatus('Pripojené k serveru. Vyber si hrdinu!');
+    document.getElementById('offline').style.display = 'none';
+    if (addr) { try { localStorage.setItem('kh_srv', addr); } catch (e) {} }
+    updateGo();
+  };
+  ws.onmessage = (e) => { let m; try { m = JSON.parse(e.data); } catch (x) { return; } onMsg(m); };
+  ws.onclose = () => { clearTimeout(to); if (ws !== curWs) return; if (opened) { banner('SPOJENIE STRATENÉ', 'Otvor hru znova', 99999); } else onNetFail(); };
+  net = { send: (o) => { if (ws.readyState === 1) ws.send(JSON.stringify(o)); }, online: true };
+}
+function onNetFail() {
+  if (net && net.local) return;
+  net = null; updateGo();
+  setStatus('Nepodarilo sa pripojiť k serveru. Zadaj adresu servera nižšie – alebo si zahraj offline.', true);
+  document.getElementById('offline').style.display = 'block';
+  document.getElementById('srvBox').open = true;
+}
+
+// offline režim – hra beží priamo v prehliadači, ty proti 3 robotom
+function startLocal() {
+  if (curWs) { try { curWs.onclose = null; curWs.close(); } catch (e) {} curWs = null; }
+  const game = new KH.Game();
+  net = {
+    local: true,
+    send(o) {
+      if (o.t === 'join') {
+        const p = game.addPlayer(o.name, o.hero, false);
+        const botNames = ['Robo-Kocka', 'Robo-Tehla', 'Robo-Plôška'];
+        game.freeHeroes().forEach((h, i) => game.addPlayer(botNames[i], h, true));
+        onMsg({ t: 'welcome', id: p.id });
+      } else if (o.t === 'in' && myId) game.input(myId, o.k);
+      else if (o.t === 'act' && myId) game.action(myId, o.a);
+      else if (o.t === 'pause' && myId) game.togglePause(myId);
+    },
+  };
+  let last = performance.now(), tick = 0;
+  localTimer = setInterval(() => {
+    const now = performance.now(), dt = Math.min(0.05, (now - last) / 1000); last = now;
+    game.step(dt);
+    if (++tick % 2 === 0) onMsg(game.snapshot());
+  }, 1000 / 60);
+  setStatus('Offline tréning: ty proti 3 robotom. Vyber si hrdinu!');
+  document.getElementById('offline').style.display = 'none';
+  document.getElementById('sub').textContent = 'Offline tréning – ty proti trom robotom. Na hru s kamarátmi spusti server (start.bat).';
+  updateGo();
+}
+document.getElementById('offline').onclick = startLocal;
+const srvIn = document.getElementById('srv');
+try { srvIn.value = localStorage.getItem('kh_srv') || ''; } catch (e) {}
+document.getElementById('srvGo').onclick = () => { if (!joined) connectServer(srvIn.value); };
+if (OFFLINE_BUILD) document.getElementById('srvBox').style.display = 'none';
+
+function onMsg(m) {
+  if (m.t === 's') {
+    lastState = m; roster = m.r;
+    showOnline(m);
+    for (const e of m.ev) handleEvent(e);
+    applyState(m);
+    refreshHeroCards();
+    showPause(m.pz);
+    if (m.g) showPhase(m.g);
+  } else if (m.t === 'welcome') {
+    myId = m.id; joined = true; joinedAt = performance.now();
+    document.body.classList.add('joined');
+    setTimeout(computeFit, 50); setTimeout(computeFit, 600);
+    document.getElementById('join').style.display = 'none';
+    document.getElementById('top').style.display = 'block';
+    if (!IS_TOUCH) document.getElementById('help').style.display = 'block';
+    setTimeout(() => { document.getElementById('help').style.display = 'none'; }, 25000);
+  } else if (m.t === 'err') {
+    setStatus(m.msg, true);
+  }
+}
+
+// ================= STAV HRÁČOV (plynulé zobrazenie) =================
+const disp = new Map();   // id -> zobrazovaný stav
+function applyState(m) {
+  const now = performance.now() / 1000;
+  const seen = new Set();
+  for (const a of m.p) {
+    const [id, x, y, z, f, hp, action, seq, stun, blocking, dead, inv, sup] = a;
+    seen.add(id);
+    const r = m.r.find(q => q.id === id);
+    let ds = disp.get(id);
+    if (!ds) { ds = { id, x, y, z, f, phase: 0, speed: 0, seq: -1, actStart: 0, flash: 0, ground: 0 }; disp.set(id, ds); makeTag(ds); }
+    ds.tx = x; ds.ty = y; ds.tz = z; ds.tf = f; ds.hp = hp; ds.stun = stun; ds.blocking = blocking; ds.inv = inv; ds.sup = sup;
+    ds.hero = r ? r.hero : 0; ds.name = r ? r.name : '?'; ds.bot = r ? r.bot : 0;
+    if (dead && !ds.dead) ds.dead = true;
+    if (!dead && ds.dead) { ds.dead = false; ds.x = x; ds.y = y; ds.z = z; ds.f = f; }
+    if (seq !== ds.seq) { if (ds.seq !== -1 && action) ds.actStart = now; else if (action) ds.actStart = now; ds.seq = seq; }
+    ds.action = action;
+  }
+  for (const [id, ds] of disp) if (!seen.has(id)) { ds.tag.remove(); disp.delete(id); }
+  renderHud();
+}
+
+function makeTag(ds) {
+  const el = document.createElement('div'); el.className = 'tag';
+  el.innerHTML = '<div class="nm"></div><div class="hp"><i></i></div>';
+  document.getElementById('labels').appendChild(el);
+  ds.tag = el; ds.tagNm = el.firstChild; ds.tagHp = el.lastChild.firstChild;
+}
+
+function hpColor(hp) { return hp > 60 ? '#4cd137' : hp > 30 ? '#fbc531' : '#e84118'; }
+
+let hudKey = '';
+function renderHud() {
+  const hud = document.getElementById('hud');
+  const list = [...roster].sort((a, b) => a.hero - b.hero);
+  const key = list.map(r => r.id + ':' + r.hero + ':' + r.name).join(',') + '|' + myId;
+  if (key !== hudKey) {
+    hudKey = key;
+    requestAnimationFrame(computeFit);
+    hud.innerHTML = list.map(r => `<div class="card${r.id === myId ? ' me' : ''}" data-id="${r.id}">
+      <div class="hd" style="background:${HEROES[r.hero].col}"><span class="hn">${HEROES[r.hero].name}</span><span class="pl">${r.bot ? '🤖 ' : '<i class="dot"></i>'}${esc(r.name)}${r.id === myId ? ' (ty)' : ''}</span><span class="hk"></span><span>${r.id === myId ? 'TY' : (r.bot ? 'ROBOT' : (net && net.online ? '<i class="dot"></i>ONLINE' : ''))}</span></div>
+      <div class="bd"><div class="pn"></div><div class="bar"><i></i></div>
+      <div class="row"><span class="stars"></span><span class="sp">SUPER</span></div></div></div>`).join('');
+  }
+  for (const r of list) {
+    const el = hud.querySelector(`[data-id="${r.id}"]`); if (!el) continue;
+    const ds = disp.get(r.id);
+    el.querySelector('.pn').textContent = r.name;
+    const hp = ds ? (ds.dead ? 0 : ds.hp) : 100;
+    const bar = el.querySelector('.bar i'); bar.style.width = hp + '%'; bar.style.background = hpColor(hp);
+    el.querySelector('.stars').innerHTML = `K.O. <b>${r.kos}</b> · pády ${r.deaths}`;
+    el.querySelector('.hk').textContent = r.kos + ' K.O.';
+    el.querySelector('.sp').classList.toggle('on', !!(ds && ds.sup));
+  }
+}
+
+// ================= EFEKTY =================
+const sparks = [], debris = [];
+let shake = 0;
+const WORDS = ['BUM!', 'PRÁSK!', 'BAM!', 'ŠMIK!', 'BÁC!', 'TRESK!'];
+const HEAVY_WORDS = ['KABOOM!', 'AUVAJ!', 'BUCH!', 'KRACH!'];
+function word(x, y, z, text, col) {
+  const p = project(x, y, z); if (!p) return;
+  const el = document.createElement('div'); el.className = 'word'; el.textContent = text; el.style.color = col;
+  el.style.left = p[0] + 'px'; el.style.top = p[1] + 'px';
+  document.getElementById('fx').appendChild(el); setTimeout(() => el.remove(), 750);
+}
+function feed(html) {
+  const el = document.createElement('div'); el.innerHTML = html;
+  const f = document.getElementById('feed'); f.prepend(el); setTimeout(() => el.remove(), 4000);
+  while (f.children.length > 5) f.lastChild.remove();
+}
+let bannerTo = null;
+function banner(big, small, ms) {
+  const b = document.getElementById('banner');
+  b.innerHTML = big + (small ? '<small>' + small + '</small>' : ''); b.style.display = 'block';
+  clearTimeout(bannerTo); bannerTo = setTimeout(() => b.style.display = 'none', ms);
+}
+function nameOf(id) { const r = roster.find(q => q.id === id); return r ? r.name : '?'; }
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]); }
+function heroCol(id) { const r = roster.find(q => q.id === id); return r ? HEROES[r.hero].col : '#fff'; }
+
+function handleEvent(e) {
+  if (e.e === 'hit') {
+    const heavy = e.dmg >= 12;
+    const n = e.b ? 5 : 8 + e.dmg;
+    for (let i = 0; i < n; i++) {
+      const cols = e.b ? ['#7FDBFF', '#FFFFFF'] : ['#FFF4B0', '#FFB000', '#FFFFFF'];
+      sparks.push({ x: e.x, y: e.y, z: e.z, vx: (Math.random() - .5) * 9, vy: Math.random() * 7, vz: (Math.random() - .5) * 9, life: 0.35 + Math.random() * 0.2, c: cols[i % cols.length] });
+    }
+    if (e.b) { word(e.x, e.y + 0.6, e.z, 'BLOK!', '#7FDBFF'); sfx('block'); }
+    else {
+      const list = heavy ? HEAVY_WORDS : WORDS;
+      word(e.x, e.y + 0.6, e.z, list[(Math.random() * list.length) | 0], heavy ? '#FF7A00' : '#F2CD37');
+      sfx(heavy ? 'heavy' : 'hit');
+    }
+    const t = disp.get(e.t); if (t) t.flash = 1;
+    if (e.t === myId || e.a === myId) shake = Math.max(shake, heavy ? 0.45 : 0.18);
+  } else if (e.e === 'ko') {
+    const r = roster.find(q => q.id === e.id);
+    const hero = r ? HEROES[r.hero] : HEROES[0];
+    for (let i = 0; i < 16; i++) debris.push({ x: e.x, y: e.y + 1, z: e.z, vx: (Math.random() - .5) * 10, vy: 4 + Math.random() * 7, vz: (Math.random() - .5) * 10,
+      rx: Math.random() * 6, ry: Math.random() * 6, wr: (Math.random() - .5) * 14, life: 2.6, c: hero.debris[i % 3] });
+    sfx('ko');
+    const vn = `<b style="color:${heroCol(e.id)}">${esc(nameOf(e.id))}</b>`;
+    if (e.by) feed(`<b style="color:${heroCol(e.by)}">${esc(nameOf(e.by))}</b> ${e.ring ? 'zhodil z arény' : 'rozbil na kocky'} ${vn}`);
+    else feed(`${vn} ${e.ring ? 'spadol z arény' : 'sa rozpadol'}`);
+    if (e.id === myId) banner('K.O.!', e.ring ? 'Spadol si z arény – o chvíľu sa vrátiš' : 'Rozpadol si sa na kocky – o chvíľu sa vrátiš', 2200);
+    else if (e.by === myId) banner('K.O.!', 'Vyradil si ' + esc(nameOf(e.id)), 1300);
+    if (e.id === myId || e.by === myId) shake = 0.6;
+  } else if (e.e === 'win') {
+    banner('🏆 ' + esc(e.name) + ' VYHRÁVA!', e.id === myId ? 'Si šampión arény!' : 'Nové kolo začne o chvíľu…', 5800);
+    sfx('win');
+  } else if (e.e === 'pause') {
+    feed(`<b>${esc(e.name)}</b> dal pauzu`);
+  } else if (e.e === 'resume') {
+    if (e.name) feed(`<b>${esc(e.name)}</b> pokračuje v hre`);
+  } else if (e.e === 'go') {
+    banner('BOJ!', '', 900); sfx('jump');
+  } else if (e.e === 'aborted') {
+    banner('HRA PRERUŠENÁ', 'Zostal len jeden hráč – čakáme na ďalších', 2500);
+  } else if (e.e === 'owner') {
+    if (joined) feed(`<b>${esc(nameOf(e.id))}</b> teraz spúšťa hru 👑`);
+  } else if (e.e === 'fight') {
+    banner('BOJ!', '', 900); sfx('heavy');
+  } else if (e.e === 'matchEnd' || e.e === 'roundEnd') {
+    sfx('win');
+  } else if (e.e === 'sw') {
+    const ds = disp.get(e.id); if (ds && e.id === myId) sfx('sw');
+  } else if (e.e === 'jump') {
+    if (e.id === myId) sfx('jump');
+  } else if (e.e === 'join') {
+    if (joined && e.id !== myId && performance.now() - joinedAt > 1500) feed(`<b>${esc(e.name)}</b> sa pripojil do boja`);
+  } else if (e.e === 'leave') {
+    if (joined) feed(`<b>${esc(e.name)}</b> odišiel`);
+  }
+}
+
+// ================= KAMERA & VYKRESĽOVANIE =================
+let VP = M4.id(), W = 1, Hh = 1, camT = [0, 0, 1.5];
+function resize() {
+  const dpr = Math.min(IS_TOUCH ? 1.5 : 2, window.devicePixelRatio || 1);
+  W = cv.clientWidth || window.innerWidth; Hh = cv.clientHeight || window.innerHeight;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(Hh * dpr);
+  gl.viewport(0, 0, cv.width, cv.height);
+  computeFit();
+}
+window.addEventListener('resize', resize);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 250));
+
+// Vzdialenosť kamery tak, aby bola vždy vidieť celá aréna (aj na malom mobile, na šírku aj na výšku).
+// Okraje = miesto, ktoré zaberá horná lišta, karty hráčov a dotykové tlačidlá.
+const fit = { d: 1, oy: 0, ox: 0 };
+let safeProbe = null;
+function safeTop() {   // koľko zhora zaberá systém / lišta aplikácie (env(safe-area-inset-top))
+  if (!safeProbe) { safeProbe = document.createElement('div'); safeProbe.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:env(safe-area-inset-top,0px);pointer-events:none;visibility:hidden'; document.body.appendChild(safeProbe); }
+  return safeProbe.offsetHeight || 0;
+}
+function computeFit() {
+  const portrait = Hh > W;
+  let mT = 54, mB = 120, mL = 12, mR = 12;
+  const box = (id) => { const el = document.getElementById(id); if (!el || !el.offsetParent && getComputedStyle(el).position !== 'fixed') return null;
+    const r = el.getBoundingClientRect(); return r.width && r.height ? r : null; };
+  const insetTop = safeTop();
+  if (IS_TOUCH) {
+    const hud = joined ? box('hud') : null, top = joined ? box('top') : null;
+    if (portrait) {
+      mT = Math.max(insetTop + 100, hud ? hud.bottom + 6 : 0, top ? top.bottom + 6 : 0); mB = 190; mL = mR = 4;
+    } else {
+      mT = insetTop + 6; mB = 6;
+      mL = Math.max(hud ? hud.right + 6 : 128, 128);
+      mR = Math.min(215, W * 0.26);
+    }
+  } else if (insetTop) mT += insetTop;
+  const availW = Math.max(80, W - mL - mR);
+  fit.ox = (mL - mR) / W;
+  const availH = Math.max(80, Hh - mT - mB);
+  fit.oy = (mB - mT) / Hh;
+  const aspect = W / Hh, P = M4.persp(45 * Math.PI / 180, aspect, 0.5, 300);
+  const pts = [];
+  for (const x of [-12.6, 12.6]) { pts.push([x, 0, -12.6], [x, 0, 12.6], [x, 3.8, -11], [x, 3.8, 11]); }
+  let d = 0.7;
+  for (; d < 6; d += 0.04) {
+    const m = M4.mul(P, M4.look([0, 24.5 * d, 1.5 + 19.5 * d], [0, 0, 1.7], [0, 1, 0]));
+    let ok = true;
+    for (const q of pts) {
+      const w = m[3] * q[0] + m[7] * q[1] + m[11] * q[2] + m[15];
+      const nx = (m[0] * q[0] + m[4] * q[1] + m[8] * q[2] + m[12]) / w, ny = (m[1] * q[0] + m[5] * q[1] + m[9] * q[2] + m[13]) / w;
+      if (Math.abs(nx) * W / 2 > availW / 2 || Math.abs(ny) * Hh / 2 > availH / 2) { ok = false; break; }
+    }
+    if (ok) break;
+  }
+  fit.d = d;
+}
+
+function project(x, y, z) {
+  const v = [0, 0, 0, 0];
+  for (let r = 0; r < 4; r++) v[r] = VP[r] * x + VP[4 + r] * y + VP[8 + r] * z + VP[12 + r];
+  if (v[3] <= 0) return null;
+  return [(v[0] / v[3] * 0.5 + 0.5) * W, (1 - (v[1] / v[3] * 0.5 + 0.5)) * Hh];
+}
+
+// náhľad hrdinov na výberovej obrazovke
+const previews = [];
+function makePreviewCard(i) {
+  const c = document.createElement('canvas'); c.width = 260; c.height = 200;
+  previews.push({ i, c });
+  return c;
+}
+
+let lastT = performance.now();
+function frame(ts) {
+  const now = ts / 1000, dt = Math.min(0.05, (ts - lastT) / 1000); lastT = ts;
+  const k = 1 - Math.exp(-dt * 16);
+
+  // plynulý pohyb postavičiek
+  for (const ds of disp.values()) {
+    const ox = ds.x, oz = ds.z;
+    ds.x += (ds.tx - ds.x) * k; ds.y += (ds.ty - ds.y) * k; ds.z += (ds.tz - ds.z) * k;
+    let df = ds.tf - ds.f; while (df > Math.PI) df -= Math.PI * 2; while (df < -Math.PI) df += Math.PI * 2;
+    ds.f += df * Math.min(1, k * 1.4);
+    const v = Math.hypot(ds.x - ox, ds.z - oz) / Math.max(dt, 1e-3);
+    ds.speed += (v - ds.speed) * Math.min(1, dt * 10);
+    ds.phase += ds.speed * dt * 2.3;
+    ds.flash = Math.max(0, ds.flash - dt * 5);
+    ds.ground = gAt(ds.x, ds.z, ds.y + 0.3);
+  }
+
+  { const L0 = [0.45, 0.8, 0.4], l0 = Math.hypot(...L0); gl.uniform3fv(U.uLight, L0.map(v => v / l0)); gl.uniform3fv(U.uFog, SKY); }
+  drawPreviews(now);
+
+  SKY = WORLDS[mapIdx].sky;
+  document.body.style.background = 'rgb(' + SKY.map(v => Math.round(v * 255)).join(',') + ')';
+
+  // kamera
+  const aspect = W / Hh;
+  let cx = 0, cz = 0, cnt = 0;
+  for (const ds of disp.values()) if (!ds.dead) { cx += ds.x; cz += ds.z; cnt++; }
+  if (cnt && joined) { cx /= cnt; cz /= cnt; } else { cx = 0; cz = 0; }
+  camT[0] += (cx * 0.25 - camT[0]) * Math.min(1, dt * 2);
+  camT[2] += (1.5 + cz * 0.2 - camT[2]) * Math.min(1, dt * 2);
+  const dist = fit.d;
+  let eye = [camT[0], 24.5 * dist, camT[2] + 19.5 * dist];
+  if (!joined) { const a = now * 0.12; eye = [Math.sin(a) * 26, 17, Math.cos(a) * 26]; }
+  shake = Math.max(0, shake - dt * 1.8);
+  const sx = (Math.random() - .5) * shake, sy = (Math.random() - .5) * shake;
+  const tgt = joined ? [camT[0] + sx, sy, camT[2] + 0.2 + sx] : [0, 0, 0];
+  const V = M4.look([eye[0] + sx, eye[1] + sy, eye[2]], tgt, [0, 1, 0]);
+  const P = M4.persp(45 * Math.PI / 180, aspect, 0.5, 300);
+  VP = M4.mul(P, V);
+  if (joined) { const sh = M4.id(); sh[12] = fit.ox; sh[13] = fit.oy; VP = M4.mul(sh, VP); }
+
+  gl.clearColor(SKY[0], SKY[1], SKY[2], 1);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.uniformMatrix4fv(U.uVP, false, VP);
+  const L = [0.45, 0.8, 0.4]; const ll = Math.hypot(...L);
+  gl.uniform3fv(U.uLight, L.map(v => v / ll));
+  gl.uniform3fv(U.uEye, eye); gl.uniform3fv(U.uFog, SKY); gl.uniform1f(U.uFogD, Math.max(1, joined ? fit.d : 1));
+
+  draw(WORLDS[mapIdx].main, M4.id());
+  draw(WORLDS[mapIdx].sea, M4.id(), WHITE, WORLDS[mapIdx].glow);
+
+  // postavičky
+  const figsToDraw = [];
+  if (disp.size) {
+    for (const ds of disp.values()) {
+      if (ds.dead) continue;
+      if (ds.inv && Math.floor(now * 10) % 2 === 0) continue;
+      figsToDraw.push(ds);
+      drawFig(FIGS[ds.hero], ds, poseFor(ds, now), ds.flash * 0.8, WHITE);
+    }
+  } else {
+    // žiadni hráči – ukáž všetkých hrdinov v strede arény
+    HEROES.forEach((_, i) => {
+      const a = i / 4 * Math.PI * 2 + 0.785;
+      const ds = { x: Math.sin(a) * 1.8, y: 0, z: Math.cos(a) * 1.8, f: a, speed: 0, phase: 0, action: '', actStart: 0, ground: 0 };
+      const q = poseFor(ds, now);
+      if (i === 0) { q.armR = -3.0; } if (i === 2) { q.armL = -1.4; q.armR = -1.4; } if (i === 3) { q.legR = -0.6 + Math.sin(now * 3) * 0.3; }
+      q.lift = Math.abs(Math.sin(now * 2 + i)) * 0.15;
+      drawFig(FIGS[i], ds, q, 0, WHITE);
+    });
+  }
+
+  // úlomky kociek po K.O.
+  for (let i = debris.length - 1; i >= 0; i--) {
+    const d = debris[i];
+    d.life -= dt; if (d.life <= 0) { debris.splice(i, 1); continue; }
+    d.vy -= 25 * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.z += d.vz * dt; d.rx += d.wr * dt; d.ry += d.wr * 0.7 * dt;
+    const g = gAt(d.x, d.z, d.y + 0.2);
+    if (d.y < g + 0.15 && d.vy < 0) { d.y = g + 0.15; d.vy *= -0.35; d.vx *= 0.7; d.vz *= 0.7; d.wr *= 0.6; }
+    const s = Math.min(1, d.life / 0.5);
+    draw(debrisMesh(d.c), M4.chain(M4.T(d.x, d.y, d.z), M4.RY(d.ry), M4.RX(d.rx), M4.S(s)));
+  }
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    const p = sparks[i];
+    p.life -= dt; if (p.life <= 0) { sparks.splice(i, 1); continue; }
+    p.vy -= 18 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
+    draw(SPARK[p.c], M4.chain(M4.T(p.x, p.y, p.z), M4.RY(p.life * 20), M4.S(Math.min(1, p.life * 3))), WHITE, 0.3);
+  }
+
+  // tiene pod postavičkami
+  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
+  gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(-2, -2);
+  for (const ds of figsToDraw) {
+    const g = gAt(ds.x, ds.z, ds.y + 0.3); if (g < -100) continue;
+    const s = Math.max(0.35, 1 - (ds.y - g) * 0.15);
+    draw(SHADOW, M4.chain(M4.T(ds.x, g + 0.2, ds.z), M4.S(s)), WHITE, 0, 0.32);
+  }
+  gl.disable(gl.POLYGON_OFFSET_FILL); gl.depthMask(true); gl.disable(gl.BLEND);
+
+  // menovky
+  for (const ds of disp.values()) {
+    if (ds.dead) { ds.tag.style.display = 'none'; continue; }
+    const p = project(ds.x, ds.y + 2.75, ds.z);
+    if (!p) { ds.tag.style.display = 'none'; continue; }
+    ds.tag.style.display = 'block';
+    ds.tag.style.left = p[0] + 'px'; ds.tag.style.top = p[1] + 'px';
+    ds.tagNm.textContent = ds.name; ds.tagNm.className = 'nm' + (ds.id === myId ? ' me' : '');
+    ds.tagHp.style.width = ds.hp + '%'; ds.tagHp.style.background = hpColor(ds.hp);
+  }
+
+  requestAnimationFrame(frame);
+}
+
+// malé náhľady hrdinov (vykreslené do 2D plátna z hlavného WebGL plátna)
+let prevTick = 0;
+function drawPreviews(now) {
+  if (joined || !previews.length) return;
+  // náhľady sa kreslia do spodnej časti hlavného plátna a skopírujú sa
+  const size = 256;
+  const oldVP = VP;
+  prevTick = (prevTick + 1) % (previews.length * 2);
+  if (prevTick & 1) return;
+  for (const pv of [previews[prevTick >> 1]]) {
+    gl.viewport(0, 0, size, size);
+    gl.enable(gl.SCISSOR_TEST); gl.scissor(0, 0, size, size);
+    const c = hex(HEROES[pv.i].col).map(v => v * 0.35 + 0.62);
+    gl.clearColor(c[0], c[1], c[2], 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    const V = M4.look([0, 1.5, 4.4], [0, 1.2, 0], [0, 1, 0]);
+    const P = M4.persp(0.62, 1, 0.5, 50);
+    gl.uniformMatrix4fv(U.uVP, false, M4.mul(P, V));
+    gl.uniform3fv(U.uEye, [0, 1.5, 4.4]); gl.uniform1f(U.uFogD, 1);
+    const ds = { x: 0, y: 0, z: 0, f: Math.sin(now * 0.8 + pv.i) * 0.6, speed: 0, phase: 0, action: '', actStart: 0, ground: 0 };
+    const q = poseFor(ds, now);
+    const t = (now + pv.i * 0.7) % 3;
+    if (t < 0.5) { q.armR = -1.55 * Math.sin(t / 0.5 * Math.PI); q.twist = 0.3 * Math.sin(t / 0.5 * Math.PI); }
+    else if (t > 1.5 && t < 2.1) { q.legR = -1.4 * Math.sin((t - 1.5) / 0.6 * Math.PI); }
+    drawFig(FIGS[pv.i], ds, q, 0, WHITE);
+    gl.disable(gl.SCISSOR_TEST);
+    const ctx = pv.c.getContext('2d');
+    // skopíruj ľavý dolný štvorec hlavného plátna
+    ctx.fillStyle = 'rgb(' + c.map(v => Math.round(v * 255)).join(',') + ')';
+    ctx.fillRect(0, 0, pv.c.width, pv.c.height);
+    ctx.drawImage(cv, 0, cv.height - size, size, size, (pv.c.width - pv.c.height) / 2, 0, pv.c.height, pv.c.height);
+  }
+  VP = oldVP;
+  gl.viewport(0, 0, cv.width, cv.height);
+}
+
+// ================= VÝBER HRDINU =================
+function buildHeroCards() {
+  const box = document.getElementById('heroes');
+  HEROES.forEach((H, i) => {
+    const b = document.createElement('button'); b.className = 'hero'; b.dataset.i = i;
+    b.appendChild(makePreviewCard(i));
+    b.insertAdjacentHTML('beforeend', `<b style="color:${H.col}">${H.name}</b><span>${H.desc}</span><em></em>`);
+    b.onclick = () => { if (b.disabled) return; selHero = i; initAudio(); refreshHeroCards(); updateGo(); };
+    box.appendChild(b);
+  });
+}
+function takenHeroes() { return new Set(roster.filter(r => !(net && net.online && r.bot)).map(r => r.hero)); }
+function refreshHeroCards() {
+  if (joined) return;
+  let taken = (net && net.local) ? new Set() : takenHeroes();
+  if (OFFLINE_BUILD && !net) taken = roomTakenHeroes();
+  document.querySelectorAll('.hero').forEach(b => {
+    const i = +b.dataset.i, t = taken.has(i);
+    b.disabled = t; b.classList.toggle('sel', selHero === i);
+    b.querySelector('em').textContent = t ? 'OBSADENÉ' : '';
+    if (t && selHero === i) selHero = -1;
+  });
+  updateGo();
+}
+function updateGo() {
+  const humans = roster.filter(r => !r.bot).length;
+  const full = net && net.online && humans >= 4;
+  const go = document.getElementById('go');
+  go.disabled = (!net && !OFFLINE_BUILD) || selHero < 0 || full || (OFFLINE_BUILD && !!net && !joined);
+  if (full) setStatus('Hra je plná – môžu hrať maximálne 4 hráči.', true);
+}
+const nameIn = document.getElementById('name');
+try { nameIn.value = localStorage.getItem('kh_name') || ''; } catch (e) {}
+document.getElementById('go').onclick = () => {
+  if (OFFLINE_BUILD && !net && selHero >= 0) {   // verzia na linku: tréning, vlastná online hra alebo pripojenie
+    initAudio();
+    const name = cleanName(nameIn.value) || HEROES[selHero].name;
+    try { localStorage.setItem('kh_name', name); } catch (e) {}
+    if (mode === 'host' && ROOM) startRoomHost(name, selHero);
+    else if (mode === 'join' && ROOM && modeHost) startRoomClient(modeHost, name, selHero);
+    else { startLocal(); net.send({ t: 'join', name, hero: selHero }); }
+    goFullscreen();
+    return;
+  }
+  if (!net || selHero < 0) return;
+  initAudio();
+  const name = nameIn.value.trim() || HEROES[selHero].name;
+  try { localStorage.setItem('kh_name', name); } catch (e) {}
+  net.send({ t: 'join', name, hero: selHero });
+  goFullscreen();
+};
+function goFullscreen() {
+  if (!IS_TOUCH) return;   // na mobile skús celú obrazovku a zamknúť na šírku (nie všade to ide)
+  try { const el = document.documentElement; const r = el.requestFullscreen && el.requestFullscreen(); if (r && r.catch) r.catch(() => {}); } catch (e) {}
+  try { const r = screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape'); if (r && r.catch) r.catch(() => {}); } catch (e) {}
+}
+
+// ================= ONLINE HRA CEZ LINK (bez počítača) =================
+// Kto má otvorený rovnaký link, je v jednej „miestnosti“. Jeden telefón je hostiteľ (počíta hru),
+// ostatní mu posielajú stlačené tlačidlá a dostávajú od neho stav hry. Všetko ide cez „presence“.
+let ROOM = null, myPeer = null, mode = 'train', modeHost = null, modesKey = '';
+let roomNote = 'Zisťujem, či funguje online spojenie…';
+const modesEl = document.getElementById('modes');
+const bytes = (str) => new TextEncoder().encode(str).length;
+function cleanName(v) {
+  return String(v || '').replace(/[\u0000-\u001f\u007f-\u009f­​-‏‪-‮⁠-⁯﻿-]/g, '').replace(/[<>&"]/g, '').trim().slice(0, 16);
+}
+function roomHosts() {
+  if (!ROOM) return [];
+  return ROOM.peers().filter(p => !p.sameTab && p.presence && p.presence.kh && p.presence.kh.host);
+}
+function roomTakenHeroes() {
+  if (mode !== 'join' || !ROOM) return new Set();
+  const h = roomHosts().find(p => p.peer === modeHost);
+  const r = h && h.presence.kh.s && Array.isArray(h.presence.kh.s.r) ? h.presence.kh.s.r : [];
+  return new Set(r.filter(q => !q.bot).map(q => q.hero));
+}
+function renderModes() {
+  if (!OFFLINE_BUILD || joined || net) return;
+  const hosts = roomHosts();
+  if (mode === 'join' && !hosts.some(h => h.peer === modeHost)) { mode = 'train'; modeHost = null; }
+  if (mode === 'train' && hosts.length && !modesEl.dataset.touched) { mode = 'join'; modeHost = hosts[0].peer; }
+  const inRoom = ROOM ? ROOM.peers().length : 0;
+  const key = JSON.stringify([!!ROOM, mode, modeHost, inRoom, hosts.map(h => [h.peer, h.presence.kh.name, h.presence.kh.cnt, h.presence.kh.ph])]);
+  if (key === modesKey) return;
+  modesKey = key;
+  const opt = (id, label, sub, on, dis) => `<button type="button" class="mode${on ? ' on' : ''}" data-m="${id}"${dis ? ' disabled' : ''}><b>${label}</b><span>${sub}</span></button>`;
+  let html = '<div class="mh">Ako chceš hrať?</div>';
+  for (const h of hosts) {
+    const k = h.presence.kh, n = Math.min(4, k.cnt | 0 || 1);
+    html += opt('join:' + h.peer, '⚔️ Pripojiť sa k hre: ' + esc(cleanName(k.name) || 'Hráč'), n + ' / 4 hráčov' + (n >= 4 ? ' · plná' : k.ph === 'lobby' ? ' · čaká na hráčov' : ' · hrá sa teraz'), mode === 'join' && modeHost === h.peer, n >= 4);
+  }
+  if (ROOM) html += opt('host', '🎮 Vytvoriť online hru', 'kamaráti s týmto linkom sa pripoja', mode === 'host');
+  html += opt('train', '🤖 Tréning proti robotom', 'hráš sám', mode === 'train');
+  if (!ROOM) html += `<div class="mnote">⚠️ ${roomNote}</div>`;
+  else html += `<div class="mnote">🟢 Online spojenie funguje · hru má teraz otvorenú ${inRoom} ${inRoom === 1 ? 'človek (ty)' : inRoom < 5 ? 'ľudia' : 'ľudí'}${hosts.length ? '' : ' · zatiaľ nikto nevytvoril online hru'}</div>`;
+  modesEl.innerHTML = html; modesEl.hidden = false;
+  bindPermButtons();
+  modesEl.querySelectorAll('.mode').forEach(b => b.onclick = () => {
+    const m = b.dataset.m; modesEl.dataset.touched = '1';
+    if (m.startsWith('join:')) { mode = 'join'; modeHost = m.slice(5); } else { mode = m; modeHost = null; }
+    renderModes(); refreshHeroCards();
+  });
+}
+let roomPerms = null;
+function bindPermButtons() {
+  const ask = document.getElementById('permAsk'), man = document.getElementById('permManage'), re = document.getElementById('permRetry');
+  if (ask) ask.onclick = async () => { try { const res = await roomPerms.request(['room']); if (res && res.room === 'granted') location.reload(); else { roomNote = 'Povolenie nebolo udelené. <small class="diag">[stav: ' + esc(String(res && res.room)) + ']</small>'; modesKey = ''; renderModes(); } } catch (e) {} };
+  if (man) man.onclick = async () => { try { await roomPerms.manage(); location.reload(); } catch (e) { roomNote = 'Povolenia otvoríš v menu hry (Permissions).'; modesKey = ''; renderModes(); } };
+  if (re) re.onclick = () => location.reload();
+}
+async function initRoom() {
+  renderModes();
+  if (!window.claude || typeof window.claude.use !== 'function') { roomNote = 'Online hra tu nie je dostupná (hra nie je otvorená v Claude).'; modesKey = ''; renderModes(); return; }
+  let r = null;
+  try { r = await window.claude.use('room'); } catch (e) { r = null; }
+  if (!r) {
+    // zistí prečo – možno treba len povoliť online spojenie
+    let st = 'unavailable', perms = null;
+    try { perms = await window.claude.use('permissions'); if (perms) st = await perms.state('room'); } catch (e) {}
+    roomPerms = perms;
+    if (st === 'prompt') roomNote = 'Online hra potrebuje tvoje povolenie. <button type="button" class="permbtn" id="permAsk">Povoliť online hru</button>';
+    else if (st === 'denied') roomNote = 'Online hra je zakázaná v povoleniach. <button type="button" class="permbtn" id="permManage">Otvoriť povolenia</button>';
+    else if (st === 'granted') roomNote = 'Online spojenie je povolené, ale nepodarilo sa pripojiť. <button type="button" class="permbtn" id="permRetry">Skúsiť znova</button>';
+    else roomNote = 'Online hra tu nie je dostupná (Claude ju pre tento účet nepovolil). Musíš byť prihlásený v aplikácii Claude a pozvaný cez Zdieľať.';
+    roomNote += ` <small class="diag">[stav: ${st}]</small>`;
+    modesKey = ''; renderModes(); bindPermButtons(); return;
+  }
+  ROOM = r;
+  const upd = () => { const me = ROOM.peers().find(p => p.sameTab); if (me) myPeer = me.peer; renderModes(); if (!joined && !net) refreshHeroCards(); };
+  ROOM.onPeers(upd, (e) => { ROOM = null; roomNote = 'Online spojenie nefunguje (' + (e && e.code || 'chyba') + '). Musíš byť prihlásený v Claude a pozvaný cez Zdieľať.'; modesKey = ''; renderModes(); });
+  modesKey = ''; upd();
+}
+
+function startRoomHost(name, hero) {
+  const game = new KH.Game({ lobby: true }), byPeer = new Map(), lastQ = new Map(), rej = {};   // online: čakáreň, bez robotov
+  let bot = null, evId = 0, sq = 0;
+  const me = game.addPlayer(name, hero, false);
+  const humans = () => [...game.players.values()].filter(p => !p.bot).length;
+  const manageBot = () => {};
+  manageBot();
+  const ring = [];
+  net = { online: true, room: true, send(o) {
+    if (o.t === 'in') game.input(me.id, o.k); else if (o.t === 'act') game.action(me.id, o.a); else if (o.t === 'pause') game.togglePause(me.id);
+    else if (o.t === 'start') game.startGame(me.id);
+  } };
+  onMsg({ t: 'welcome', id: me.id });
+  let last = performance.now(), tick = 0;
+  localTimer = setInterval(() => {
+    const now = performance.now(), dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (!myPeer) { const mp = ROOM.peers().find(p => p.sameTab); if (mp) myPeer = mp.peer; }
+    const here = ROOM.peers(), seen = new Set();
+    for (const p of here) {
+      if (p.sameTab) continue;
+      const k = p.presence && p.presence.kh;
+      if (!k || !myPeer || k.join !== myPeer) continue;
+      seen.add(p.peer);
+      let id = byPeer.get(p.peer);
+      if (!id) {
+        const h = k.hero | 0;
+        if (humans() >= 4) { rej[p.peer] = 'full'; continue; }
+        if (bot) { game.removePlayer(bot.id); bot = null; }
+        if (h < 0 || h > 3 || [...game.players.values()].some(q => q.hero === h)) { rej[p.peer] = 'taken'; manageBot(); continue; }
+        delete rej[p.peer];
+        id = game.addPlayer(cleanName(k.name) || 'Hráč', h, false).id;
+        byPeer.set(p.peer, id); lastQ.set(p.peer, 0); manageBot();
+      }
+      game.input(id, k.k | 0);
+      let lq = lastQ.get(p.peer) || 0;
+      for (const it of (Array.isArray(k.q) ? k.q : [])) {
+        if (!Array.isArray(it)) continue;
+        const sNum = it[0] | 0, a = it[1];
+        if (sNum <= lq) continue;
+        lq = sNum;
+        if (a === 'pause') game.togglePause(id); else if (a === 'punch' || a === 'kick' || a === 'super' || a === 'jump') game.action(id, a);
+      }
+      lastQ.set(p.peer, lq);
+    }
+    for (const [peer, id] of byPeer) if (!seen.has(peer)) { game.removePlayer(id); byPeer.delete(peer); lastQ.delete(peer); manageBot(); }
+    for (const k in rej) if (!here.some(p => p.peer === k)) delete rej[k];
+    game.step(dt);
+    if (++tick % 3 === 0) {   // 20× za sekundu
+      const snap = game.snapshot();
+      for (const e of snap.ev) { e.i = ++evId; ring.push(e); }
+      while (ring.length > 14) ring.shift();
+      onMsg(snap);
+      const pm = {}; for (const [peer, id] of byPeer) pm[peer] = id;
+      const out = { sq: ++sq, p: snap.p, r: snap.r, g: snap.g, pz: snap.pz, ev: ring.slice(), pm, rej: Object.assign({}, rej) };
+      const kh = { host: 1, name, cnt: humans(), ph: game.phase, s: out };
+      while (bytes(JSON.stringify({ kh })) > 3800 && out.ev.length) out.ev.shift();
+      if (bytes(JSON.stringify({ kh })) > 3800 && out.g) out.g.res = null;
+      ROOM.presence({ kh }).catch(() => {});
+    }
+  }, 1000 / 60);
+  setStatus('Online hra vytvorená. Kamaráti sa pripoja cez rovnaký link.');
+  feed('Hra vytvorená – čakáme na kamarátov. Keď prídu, spusti hru tlačidlom ▶.');
+}
+
+function startRoomClient(hostPeer, name, hero) {
+  let seq = 0, keys = 0, lastSq = -1, lastEv = 0, welcomed = false, goneAt = 0, lastNew = performance.now(), stale = false;
+  const q = [];
+  const push = () => ROOM.presence({ kh: { join: hostPeer, name, hero, k: keys, q: q.slice() } }).catch(() => {});
+  net = { online: true, room: true, send(o) {
+    if (o.t === 'in') { keys = o.k | 0; push(); }
+    else if (o.t === 'act' || o.t === 'pause') { q.push([++seq, o.t === 'pause' ? 'pause' : o.a]); if (q.length > 8) q.shift(); push(); }
+  } };
+  push();
+  updateGo();
+  setStatus('Pripájam sa k hre…');
+  const stop = (msg) => {
+    clearInterval(localTimer); localTimer = null; net = null;
+    ROOM.presence({ kh: null }).catch(() => {});
+    setStatus(msg, true); modesKey = ''; renderModes(); refreshHeroCards(); updateGo();
+  };
+  const startedAt = performance.now();
+  localTimer = setInterval(() => {
+    const h = ROOM.peers().find(p => p.peer === hostPeer);
+    const kh = h && h.presence && h.presence.kh;
+    if (!kh || !kh.host) {
+      if (!goneAt) goneAt = performance.now();
+      if (performance.now() - goneAt > 3000) {
+        if (joined) { clearInterval(localTimer); localTimer = null; banner('HRA SKONČILA', 'Hostiteľ odišiel – otvor hru znova', 99999); }
+        else stop('Táto hra už skončila. Vyber inú alebo vytvor novú.');
+      }
+      return;
+    }
+    goneAt = 0;
+    const st = kh.s;
+    if (!st || st.sq === lastSq) {
+      if (!welcomed && performance.now() - startedAt > 10000) stop('Hostiteľ neodpovedá. Skús to znova.');
+      // hostiteľov telefón sa uspal alebo stratil signál
+      if (welcomed && !stale && performance.now() - lastNew > 6000) { stale = true; banner('ČAKÁM NA HOSTITEĽA', 'Jeho telefón neodpovedá – nech má hru otvorenú', 99999); }
+      return;
+    }
+    lastSq = st.sq; lastNew = performance.now();
+    if (stale) { stale = false; document.getElementById('banner').style.display = 'none'; }
+    const evs = Array.isArray(st.ev) ? st.ev : [];
+    if (!welcomed) {
+      const r = st.rej && myPeer ? st.rej[myPeer] : null;
+      if (r) { stop(r === 'full' ? 'Hra je plná – môžu hrať maximálne 4 hráči.' : 'Túto postavu už má iný hráč. Vyber si inú.'); return; }
+      const id = st.pm && myPeer ? st.pm[myPeer] : 0;
+      if (!id) return;
+      welcomed = true;
+      lastEv = evs.reduce((m, e) => Math.max(m, e.i | 0), 0);
+      onMsg({ t: 'welcome', id });
+    }
+    const ev = evs.filter(e => (e.i | 0) > lastEv);
+    if (ev.length) lastEv = ev[ev.length - 1].i;
+    onMsg({ t: 's', p: st.p || [], r: st.r || [], g: st.g, pz: st.pz, ev });
+  }, 1000 / 30);
+}
+
+// ================= KTO JE ONLINE =================
+let onlineKey = '';
+function showOnline(m) {
+  const box = document.getElementById('online'), onl = document.getElementById('onl');
+  if (!net || !net.online) { box.hidden = true; onl.hidden = true; return; }
+  if (net.room) box.hidden = true;
+  const humans = m.r.filter(r => !r.bot), bots = m.r.filter(r => r.bot), waiting = m.w || 0;
+  onl.hidden = false;
+  onl.innerHTML = `<i class="dot"></i>${humans.length} online`;
+  const key = JSON.stringify([humans.map(r => r.name + r.hero), bots.length, waiting]);
+  if (key === onlineKey || net.room) return;
+  onlineKey = key;
+  box.hidden = false;
+  const chip = (r) => `<span class="p${r.bot ? ' bot' : ''}"><i style="background:${HEROES[r.hero].col}"></i>${r.bot ? '🤖 ' : ''}${esc(r.name)} <small>${HEROES[r.hero].name}</small></span>`;
+  let head;
+  if (!humans.length) head = 'Zatiaľ nikto nehrá – budeš prvý!';
+  else head = `<i class="dot"></i><b class="h">Online v hre: ${humans.length} / 4</b>`;
+  if (waiting > 0 && !joined) head += ` · ${waiting === 1 ? 'ty vyberáš postavu' : 'postavu si vyberá ' + waiting + ' ľudí (aj ty)'}`;
+  else if (waiting > 0) head += ` · ${waiting} si vyberá postavu`;
+  box.innerHTML = head + (m.r.length ? `<div class="who">${humans.map(chip).join('')}${bots.map(chip).join('')}</div>` : '');
+}
+
+// ================= KOLÁ A MAPY =================
+let phaseKey = '';
+const phaseEl = document.getElementById('phase'), topInfo = document.getElementById('topInfo');
+function fmtTime(t) { t = Math.ceil(t); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); }
+function standingsTable(st, winners) {
+  return `<table><thead><tr><th>#</th><th>Hráč</th><th class="n">K.O.</th><th class="n">Pády</th></tr></thead><tbody>` +
+    st.map((q, i) => `<tr class="${winners && winners.includes(q.id) ? 'first' : ''}"><td>${i + 1}.</td>
+      <td><span class="sw" style="background:${HEROES[q.hero].col}"></span>${esc(q.name)}${q.id === myId ? ' (ty)' : ''}${q.bot ? ' 🤖' : ''}</td>
+      <td class="n">${q.kos}</td><td class="n">${q.deaths}</td></tr>`).join('') + `</tbody></table>`;
+}
+function showPhase(g) {
+  mapIdx = g.map;
+  const mapName = MAPS[g.map].name;
+  if (g.ph === 'fight') topInfo.innerHTML = `<span class="kolo">Kolo </span><b>${g.r}/${g.n}</b><span class="mapn"> · ${mapName}</span> <span class="tm${g.t <= 5 ? ' low' : ''}">${fmtTime(g.t)}</span>`;
+  else if (g.ph === 'intro') topInfo.innerHTML = `<span class="kolo">Kolo </span><b>${g.r}/${g.n}</b><span class="mapn"> · ${mapName}</span><span class="kolo"> · pripravte sa</span>`;
+  else if (g.ph === 'break') topInfo.innerHTML = `Koniec kola ${g.r}/${g.n}`;
+  else if (g.ph === 'end') topInfo.innerHTML = `Koniec hry`;
+  else if (g.ph === 'lobby') topInfo.innerHTML = `Čakáreň · ${roster.filter(r => !r.bot).length}/4`;
+  else topInfo.textContent = 'Čaká sa na hráčov';
+  if (!joined) { phaseEl.style.display = 'none'; phaseKey = ''; return; }
+  let key = g.ph, html = '';
+  if (g.ph === 'intro') {
+    const c = Math.ceil(g.t - 0.5);
+    key += g.r + ':' + c;
+    html = `<div class="rk">KOLO ${g.r} / ${g.n}</div><div class="mn">${mapName}</div>` +
+      (g.map === 1 ? '<div class="rk" style="font-size:18px">Pozor, ľad sa šmýka!</div>' : g.map === 2 ? '<div class="rk" style="font-size:18px">Pozor na lávovú dieru v strede!</div>' : '') +
+      `<div class="count">${c > 0 ? c : 'BOJ!'}</div>`;
+    if (key !== phaseKey && c > 0) sfx('block');
+  } else if (g.ph === 'break') {
+    key += g.r;
+    const st = [...roster].sort((a, b) => b.kos - a.kos || a.deaths - b.deaths);
+    html = `<div class="res"><h2>KONIEC KOLA ${g.r}</h2><div class="win">Ďalšia mapa: ${MAPS[(g.r) % MAPS.length].name}</div>${standingsTable(st, [st[0] && st[0].id])}</div>`;
+  } else if (g.ph === 'lobby' && g.lb) {
+    const humans = roster.filter(r => !r.bot);
+    const owner = roster.find(r => r.id === g.own), isOwner = g.own === myId;
+    key += ':' + humans.map(r => r.id + r.name + r.hero).join(',') + ':' + g.own + ':' + myId;
+    html = `<div class="lobby"><h3>ČAKÁREŇ</h3><div class="lc">${humans.length} / 4 hráčov</div>
+      <div class="lp">${humans.map(r => `<span class="p"><i style="background:${HEROES[r.hero].col}"></i>${esc(r.name)}${r.id === g.own ? ' 👑' : ''}${r.id === myId ? ' (ty)' : ''}</span>`).join('')}</div>
+      ${isOwner ? (humans.length >= 2 ? '<button type="button" id="startBtn">▶ SPUSTIŤ HRU</button>' : '<div class="lw">Čakáme, kým sa pripojí aspoň 1 ďalší hráč…</div>')
+        : `<div class="lw">Hru spustí ${esc(owner ? owner.name : 'zakladateľ')} 👑</div>`}
+      <div class="lt">Kým čakáte, môžete sa rozcvičiť – nič sa nepočíta.</div></div>`;
+  } else if (g.ph === 'end' && g.res) {
+    key += ':' + Math.ceil(g.t);
+    const w = g.res.st.filter(q => g.res.w.includes(q.id));
+    const title = w.length === 1 ? `🏆 ${esc(w[0].name)} vyhráva!` : w.length > 1 ? `Remíza: ${w.map(q => esc(q.name)).join(', ')}` : 'Koniec hry';
+    const me = g.res.w.includes(myId) ? '<div class="win">Si šampión arény!</div>' : '';
+    html = `<div class="res"><h2>${title}</h2>${me}${standingsTable(g.res.st, g.res.w)}<div class="foot">Nová hra začne o ${Math.ceil(g.t)} s</div></div>`;
+  } else key = '';
+  if (key === phaseKey) return;
+  phaseKey = key;
+  phaseEl.innerHTML = html;
+  phaseEl.style.display = html ? 'flex' : 'none';
+  phaseEl.classList.toggle('top', g.ph === 'lobby');
+  const sb = document.getElementById('startBtn');
+  if (sb) sb.onclick = () => { initAudio(); if (net) net.send({ t: 'start' }); sb.disabled = true; sb.textContent = 'Spúšťam…'; };
+  if (html && g.ph !== 'lobby') { document.getElementById('banner').style.display = 'none'; clearTimeout(bannerTo); }
+}
+
+// ================= PAUZA =================
+let paused = null, pauseKey = '';
+const pauseEl = document.getElementById('pause'), pauseBox = document.getElementById('pauseBox');
+function togglePause() { if (joined && net) net.send({ t: 'pause' }); }
+document.getElementById('helpX').onclick = () => { document.getElementById('help').style.display = 'none'; };
+document.getElementById('pauseBtn').onclick = (e) => { e.currentTarget.blur(); togglePause(); };
+function showPause(pz) {
+  paused = pz;
+  if (!joined || !pz) { if (pauseKey) { pauseEl.style.display = 'none'; pauseKey = ''; } return; }
+  const key = pz.c > 0 ? 'c' + Math.ceil(pz.c) : 'p' + pz.n;
+  if (key === pauseKey) return;
+  pauseKey = key;
+  pauseEl.style.display = 'flex';
+  if (pz.c > 0) {
+    pauseBox.style.cssText = 'background:none;border:0;box-shadow:none';
+    pauseBox.innerHTML = `<div class="count">${Math.ceil(pz.c)}</div>`;
+    sfx('block');
+  } else {
+    pauseBox.style.cssText = '';
+    pauseBox.innerHTML = `<h2>PAUZA</h2><p>Hru pozastavil <b>${esc(pz.n)}</b>.<br>Ktokoľvek môže pokračovať.</p>
+      <button type="button" id="resumeBtn">▶ Pokračovať${IS_TOUCH ? '' : ' (P)'}</button>`;
+    document.getElementById('resumeBtn').onclick = togglePause;
+    held.clear(); bits = 0;
+  }
+}
+
+// ================= KLÁVESNICA =================
+const MAP = { KeyW: 1, ArrowUp: 1, KeyS: 2, ArrowDown: 2, KeyA: 4, ArrowLeft: 4, KeyD: 8, ArrowRight: 8, KeyL: 16 };
+const held = new Set();
+let bits = 0, pend = null, touchBits = 0;
+function sendBits() {
+  let b = touchBits; for (const c of held) b |= MAP[c] || 0;
+  if (b !== bits) { bits = b; net && net.send({ t: 'in', k: bits }); }
+}
+function act(a) { net && net.send({ t: 'act', a }); }
+// J a K stlačené naraz (do 70 ms) = SUPER úder
+function atkKey(kind) {
+  if (pend && pend.kind !== kind) { clearTimeout(pend.to); pend = null; act('super'); return; }
+  if (pend) { clearTimeout(pend.to); act(pend.kind); pend = null; }
+  pend = { kind, to: setTimeout(() => { act(kind); pend = null; }, 70) };
+}
+window.addEventListener('keydown', (e) => {
+  if (!joined) { if (e.code === 'Enter' && !document.getElementById('go').disabled) document.getElementById('go').click(); return; }
+  if (e.target && e.target.tagName === 'INPUT') return;
+  initAudio();
+  if (e.code === 'KeyP' || e.code === 'Escape') { e.preventDefault(); if (!e.repeat) togglePause(); return; }
+  if (paused) { if (e.code === 'Space') e.preventDefault(); return; }
+  if (MAP[e.code]) { e.preventDefault(); held.add(e.code); sendBits(); return; }
+  if (e.repeat) { if (e.code === 'Space') e.preventDefault(); return; }
+  if (e.code === 'Space') { e.preventDefault(); act('jump'); }
+  else if (e.code === 'KeyJ') atkKey('punch');
+  else if (e.code === 'KeyK') atkKey('kick');
+  else if (e.code === 'KeyH') { const h = document.getElementById('help'); h.style.display = h.style.display === 'none' ? 'block' : 'none'; }
+});
+window.addEventListener('keyup', (e) => { if (MAP[e.code]) { held.delete(e.code); sendBits(); } });
+window.addEventListener('blur', () => { held.clear(); sendBits(); });
+setInterval(() => { if (joined && net && net.online) net.send({ t: 'in', k: bits }); }, 250);
+
+// ================= DOTYKOVÉ OVLÁDANIE (mobil) =================
+(function () {
+  const zone = document.getElementById('stickZone'), stick = document.getElementById('stick'), knob = document.getElementById('knob');
+  let sid = null, moveBits = 0, blockOn = false;
+  const apply = () => { touchBits = moveBits | (blockOn ? 16 : 0); sendBits(); };
+  function stickMove(e) {
+    const r = stick.getBoundingClientRect();
+    let dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+    const len = Math.hypot(dx, dy), max = 46;
+    if (len > max) { dx *= max / len; dy *= max / len; }
+    knob.style.transform = `translate(${dx}px, ${dy}px)`;
+    let b = 0;
+    if (len > 14) {
+      const nx = dx / Math.min(len, max), ny = dy / Math.min(len, max);
+      if (nx > 0.38) b |= 8; if (nx < -0.38) b |= 4;
+      if (ny > 0.38) b |= 2; if (ny < -0.38) b |= 1;
+    }
+    if (b !== moveBits) { moveBits = b; apply(); }
+  }
+  function stickEnd(e) {
+    if (e.pointerId !== sid) return;
+    sid = null; knob.style.transform = ''; moveBits = 0; apply();
+    stick.classList.remove('act'); stick.style.left = stick.style.top = stick.style.bottom = '';
+  }
+  zone.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); initAudio(); if (sid !== null) return;
+    sid = e.pointerId; try { zone.setPointerCapture(sid); } catch (x) {}
+    const sz = stick.offsetWidth / 2;   // joystick sa presunie pod palec
+    stick.style.left = Math.max(4, e.clientX - sz) + 'px';
+    stick.style.top = Math.max(4, Math.min(window.innerHeight - sz * 2 - 4, e.clientY - sz)) + 'px';
+    stick.style.bottom = 'auto';
+    stick.classList.add('act');
+    stickMove(e);
+  });
+  zone.addEventListener('pointermove', (e) => { if (e.pointerId === sid) { e.preventDefault(); stickMove(e); } });
+  zone.addEventListener('pointerup', stickEnd); zone.addEventListener('pointercancel', stickEnd);
+
+  document.querySelectorAll('.tb').forEach((b) => {
+    const a = b.dataset.a;
+    const up = (e) => { e.preventDefault(); b.classList.remove('on'); if (a === 'block') { blockOn = false; apply(); } };
+    b.addEventListener('pointerdown', (e) => {
+      e.preventDefault(); initAudio(); b.classList.add('on');
+      try { b.setPointerCapture(e.pointerId); } catch (x) {}
+      if (!joined || paused) return;
+      if (a === 'block') { blockOn = true; apply(); } else act(a);
+    });
+    b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
+    b.addEventListener('contextmenu', (e) => e.preventDefault());
+  });
+  window.addEventListener('blur', () => { moveBits = 0; blockOn = false; sid = null; knob.style.transform = ''; touchBits = 0; });
+  // tlačidlo SUPER zosivie, kým sa nabíja
+  setInterval(() => { const me = disp.get(myId); document.querySelector('.tb.sup').classList.toggle('off', !!me && !me.sup); }, 150);
+  document.addEventListener('gesturestart', (e) => e.preventDefault());
+})();
+
+// aplikácia na plochu telefónu (PWA) – funguje len cez https alebo localhost
+if (!OFFLINE_BUILD && 'serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+// ================= ŠTART =================
+if (gl) {
+  resize();
+  initGfx();
+  buildHeroCards();
+  requestAnimationFrame(frame);
+  if (OFFLINE_BUILD) { setStatus('Vyber si hrdinu a spôsob hry.'); initRoom(); updateGo(); }
+  else if (location.protocol === 'file:') startLocal();
+  else connectServer('');
+}
+</script>
+</body>
+</html>

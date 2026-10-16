@@ -1,0 +1,9 @@
+# Nastavenie pre bezplatný server Render.com (hra beží na internete bez počítača)
+services:
+  - type: web
+    name: kockovi-hrdinovia
+    runtime: node
+    plan: free
+    buildCommand: echo "Hra nepotrebuje nič inštalovať"
+    startCommand: node server.js
+    healthCheckPath: /

@@ -1,0 +1,32 @@
+{
+ "name": "Kockoví hrdinovia",
+ "short_name": "Hrdinovia",
+ "description": "Kocková bojová aréna pre 1 – 4 hráčov",
+ "start_url": "./",
+ "scope": "./",
+ "display": "fullscreen",
+ "orientation": "landscape",
+ "background_color": "#7CC4F2",
+ "theme_color": "#C91A09",
+ "lang": "sk",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icon-maskable.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
+}
